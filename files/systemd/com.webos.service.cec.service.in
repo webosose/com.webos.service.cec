@@ -1,0 +1,10 @@
+[Unit]
+Description=webos - "%n"
+Requires=ls-hubd.service
+After=ls-hubd.service
+
+[Service]
+Type=simple
+OOMScoreAdjust=-500
+ExecStart=@WEBOS_INSTALL_SBINDIR@/@CMAKE_PROJECT_NAME@
+Restart=on-failure

@@ -1,0 +1,5 @@
+{
+        "cec.query": [
+                "com.webos.service.cec/gpio/list"
+        ]
+}
