@@ -1,5 +1,5 @@
 {
         "cec.query": [
-                "com.webos.service.cec/gpio/list"
+                "com.webos.service.cec/list"
         ]
 }

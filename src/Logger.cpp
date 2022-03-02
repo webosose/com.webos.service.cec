@@ -14,10 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/** * Global Loggers */
+#include <Logger.h>
+#include <PmLog.h>
 
-#include "Logger.h"
-#include "PmLog.h"
-#include "config.h"
-
-pmlog::PmLog appLog(PROJECT_NAME);
+pmlog::PmLog appLog("CEC");

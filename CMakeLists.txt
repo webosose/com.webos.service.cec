@@ -13,24 +13,19 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-# Author(s)    : Manjuraehmad Momin
-# Email ID.    : manjuraehmad.momin@lge.com
 
 
 cmake_minimum_required (VERSION 3.0)
-
-project (cec VERSION 1.0.0 LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 11)
-# for making available config.h for other source codes
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h"
-    @ONLY )
-include_directories(include)
+project (cec-service CXX)
 
 include(webOS/webOS)
+include(FindPkgConfig)
 
 webos_modules_init(1 0 0 QUALIFIER RC4)
 webos_component(1 0 0)
+
+set (CMAKE_CXX_STANDARD 11)
+
+option (USE_PMLOG "Enable PMLOG logging" ON)
 
 add_subdirectory(src)

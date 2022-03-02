@@ -14,25 +14,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <config.h>
-#include <glib.h>
-#include <iostream>
-#include <luna-service2++/handle.hpp>
-#include "Logger.h"
-#include <luna-service2/lunaservice.hpp>
-#include "CecAPI.h"
-#include <time.h>
-#include <sys/time.h>
+#include <CECLunaService.h>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
     try {
-        LS::Handle luna_handle(SERVICE_NAME);
-        CecService luna_service(&luna_handle);
-        luna_service.registerMethodsToLsHub();
+        CECLunaService luna_service;
         luna_service.run();
     } catch (...) {
-        AppLogError() << "some Issue in Application "
-                << "\n";
+        AppLogError() << "Exception in com.webos.service.cec " << "\n";
     }
     return 0;
 }
