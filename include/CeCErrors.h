@@ -14,7 +14,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <Logger.h>
-#include <PmLog.h>
 
-pmlog::PmLog appLog("CEC");
+#ifndef CEC_ERRORS_H_
+#define CEC_ERRORS_H_
+
+#include <string>
+
+enum CecErrorCode
+{
+	CEC_ERR_BAD_JSON = 1,
+    CEC_ERR_SCHEMA_VALIDATION_FAILED,
+    CEC_ERR_DESTADDR_PARAM_MISSING,
+    CEC_ERR_COMMAND_PARAM_MISSING,
+    CEC_ERR_CONFNAME_PARAM_MISSING,
+    CEC_ERR_CONFVALUE_PARAM_MISSING,
+    CEC_ERR_INVALID_PROVIDER_PAYLOAD,
+    CEC_ERR_UNKNOWN_ERROR
+};
+
+const std::string retrieveErrorText(CecErrorCode errorCode);
+
+#endif //CEC_ERRORS_H_

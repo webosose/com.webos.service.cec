@@ -21,7 +21,10 @@
 #include <memory>
 #include <unordered_map>
 #include <list>
-#include <Logger.h>
+#include <map>
+
+#include "Logger.h"
+#include "Command.h"
 
 class CECLunaService :public LS::Handle
 {
@@ -36,17 +39,35 @@ public:
 
     void stop();
 
-    bool listDevices(LSMessage &ls_message);
+    bool listDevices(LSMessage &message);
 
-    bool scan(LSMessage &ls_message);
+    bool scan(LSMessage &message);
 
-    bool sendMessage(LSMessage &ls_message);
+    bool sendCommand(LSMessage &message);
+
+    bool getConfig(LSMessage &message);
+
+    bool setConfig(LSMessage &message);
 
     static bool receiveCallback(LSHandle *sh, LSMessage *reply, void *ctx);
+
+    static void listDevicesCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
+    static void scanCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
+    static void sendCommandCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
+    static void getConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
+    static void setConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
 private:
+
+    void handleListDevices(pbnjson::JValue& requestObj);
+    void handleScan(pbnjson::JValue& requestObj);
+    void handleSendCommand(pbnjson::JValue& requestObj);
+    void handleGetConfig(pbnjson::JValue& requestObj);
+    void handleSetConfig(pbnjson::JValue& requestObj);
     using MainLoopT = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>;
     MainLoopT main_loop_ptr;
     std::list<LS::Call> callObjects;
     LS::Handle *luna_handle;
     std::list<LS::Message> getTimeClients;
+    std::map<uint16_t,LSMessage*> m_clients;
+    uint16_t m_clientId = 0;
 };

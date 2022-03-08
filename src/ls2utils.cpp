@@ -14,7 +14,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <Logger.h>
-#include <PmLog.h>
+#include "Logger.h"
+#include "ls2utils.h"
 
-pmlog::PmLog appLog("CEC");
+void LSUtils::postToClient(LS::Message &message, pbnjson::JValue &object)
+{
+	std::string payload;
+	LSUtils::generatePayload(object, payload);
+
+	try
+	{
+		message.respond(payload.c_str());
+	}
+	catch (LS::Error &error)
+	{
+//		CEC_SERVICE_ERROR(MSGID_LS2_FAILED_TO_SEND, 0, "Failed to submit response: %s", error.what());
+	}
+}

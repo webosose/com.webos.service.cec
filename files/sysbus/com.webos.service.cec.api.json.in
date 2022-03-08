@@ -1,5 +1,11 @@
 {
-        "cec.query": [
-                "com.webos.service.cec/list"
-        ]
+  "cec.query": [
+    "com.webos.service.cec/listDevices",
+    "com.webos.service.cec/scan",
+    "com.webos.service.cec/getConfig"
+  ],
+  "cec.operation": [
+    "com.webos.service.cec/sendCommand",
+    "com.webos.service.cec/setConfig"
+  ]
 }

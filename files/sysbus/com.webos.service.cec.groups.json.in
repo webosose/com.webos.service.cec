@@ -1,4 +1,11 @@
 {
-        "allowedNames" : ["com.webos.service.cec"],
-        "cec.query" : ["dev"]
+  "allowedNames": [
+    "com.webos.service.cec"
+  ],
+  "cec.query": [
+    "dev"
+  ],
+  "cec.operation": [
+    "oem"
+  ]
 }
