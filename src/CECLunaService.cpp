@@ -14,15 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <pbnjson.hpp>
+
 #include "CeCErrors.h"
 #include "ls2utils.h"
 #include "CECLunaService.h"
-
-#include <glib/glist.h>
-#include <pbnjson.hpp>
-#include <luna-service2/lunaservice.h>
-#include <luna-service2++/error.hpp>
-#include <luna-service2++/message.hpp>
 
 const std::string SERVICE_NAME = "com.webos.service.cec";
 const std::string GET_STATUS_INVALID_PAYLOAD = "Invalid Payload";
@@ -51,6 +47,7 @@ void CECLunaService::registerMethods() {
 
     registerCategory("/", LS_CATEGORY_TABLE_NAME(base), NULL, NULL);
     setCategoryData("/", this);
+    mScanSubscriptions.setServiceHandle(this);
 }
 
 void CECLunaService::run()
@@ -122,11 +119,19 @@ bool CECLunaService::scan(LSMessage &message) {
             LSUtils::respondWithError(request, CEC_ERR_SCHEMA_VALIDATION_FAILED);
         return true;
     } else {
+
         //Create Command and send to CEC Controller
         LSMessage *requestMessage = request.get();
         LSMessageRef(requestMessage);
         m_clients[++m_clientId] = requestMessage;
         handleScan(requestObj);
+
+        // Handle scan subscription
+        if (request.isSubscription())
+        {
+            LS::SubscriptionPoint *subscriptionPoint = new LS::SubscriptionPoint;
+            mScanSubscriptions.subscribe(request);
+        }
         return true;
     }
 }
@@ -382,6 +387,7 @@ void CECLunaService::scanCb(void *ctx, uint16_t clientId, std::shared_ptr<Comman
         }
         pThis->m_clients.erase(clientId);
     }
+    pThis->notifyScanStatus(data);
 }
 
 void CECLunaService::sendCommandCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data) {
@@ -469,4 +475,27 @@ void CECLunaService::setConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<C
         }
         pThis->m_clients.erase(clientId);
     }
+}
+
+void CECLunaService::notifyScanStatus(std::shared_ptr<ScanResData> data) {
+
+    pbnjson::JValue respObj = pbnjson::Object();
+    respObj.put("returnValue", true);
+    respObj.put("subscribed", true);
+    pbnjson::JValue cecDevicesArray = pbnjson::Array();
+    for (auto const &cecDevice : data->devices) {
+        pbnjson::JValue device = pbnjson::Object();
+        device.put("name", cecDevice.name);
+        device.put("address", cecDevice.address);
+        device.put("activeSource", cecDevice.activeSource);
+        device.put("vendor", cecDevice.vendor);
+        device.put("osdString", cecDevice.osdString);
+        device.put("cecVersion", cecDevice.cecVersion);
+        device.put("powerStatus", cecDevice.powerStatus);
+        device.put("language", cecDevice.language);
+        cecDevicesArray.append(device);
+    }
+    respObj.put("devices", cecDevicesArray);
+
+    LSUtils::postToSubscriptionPoint(&mScanSubscriptions, respObj);
 }

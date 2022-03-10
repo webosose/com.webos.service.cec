@@ -17,16 +17,18 @@
 #pragma once
 
 #include <glib.h>
-#include <luna-service2++/handle.hpp>
 #include <memory>
 #include <unordered_map>
 #include <list>
 #include <map>
 
+#include <luna-service2/lunaservice.hpp>
+
 #include "Logger.h"
 #include "Command.h"
+#include "IScanObserver.h"
 
-class CECLunaService :public LS::Handle
+class CECLunaService: public LS::Handle, public IScanObserver
 {
 public:
     CECLunaService();
@@ -51,6 +53,8 @@ public:
 
     static bool receiveCallback(LSHandle *sh, LSMessage *reply, void *ctx);
 
+    void notifyScanStatus(std::shared_ptr<ScanResData> data);
+
     static void listDevicesCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
     static void scanCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
     static void sendCommandCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
@@ -70,4 +74,6 @@ private:
     std::list<LS::Message> getTimeClients;
     std::map<uint16_t,LSMessage*> m_clients;
     uint16_t m_clientId = 0;
+
+    LS::SubscriptionPoint mScanSubscriptions;
 };
