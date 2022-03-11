@@ -1,6 +1,6 @@
 {
   "cec.query": [
-    "com.webos.service.cec/listDevices",
+    "com.webos.service.cec/listAdapters",
     "com.webos.service.cec/scan",
     "com.webos.service.cec/getConfig"
   ],

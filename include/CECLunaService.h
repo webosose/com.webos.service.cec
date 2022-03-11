@@ -28,8 +28,7 @@
 #include "Command.h"
 #include "IScanObserver.h"
 
-class CECLunaService: public LS::Handle, public IScanObserver
-{
+class CECLunaService: public LS::Handle, public IScanObserver {
 public:
     CECLunaService();
 
@@ -41,7 +40,7 @@ public:
 
     void stop();
 
-    bool listDevices(LSMessage &message);
+    bool listAdapters(LSMessage &message);
 
     bool scan(LSMessage &message);
 
@@ -51,28 +50,24 @@ public:
 
     bool setConfig(LSMessage &message);
 
-    static bool receiveCallback(LSHandle *sh, LSMessage *reply, void *ctx);
-
     void notifyScanStatus(std::shared_ptr<ScanResData> data);
 
-    static void listDevicesCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
-    static void scanCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
-    static void sendCommandCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
-    static void getConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
-    static void setConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data);
+    static void callback(void *ctx, uint16_t clientId, enum CommandType type, std::shared_ptr<CommandResData> respData);
 private:
 
-    void handleListDevices(pbnjson::JValue& requestObj);
-    void handleScan(pbnjson::JValue& requestObj);
-    void handleSendCommand(pbnjson::JValue& requestObj);
-    void handleGetConfig(pbnjson::JValue& requestObj);
-    void handleSetConfig(pbnjson::JValue& requestObj);
+    void handleListAdapters(pbnjson::JValue &requestObj);
+    void handleScan(pbnjson::JValue &requestObj);
+    void handleSendCommand(pbnjson::JValue &requestObj);
+    void handleGetConfig(pbnjson::JValue &requestObj);
+    void handleSetConfig(pbnjson::JValue &requestObj);
+    void parseResponseObject(pbnjson::JValue &responseObj, enum CommandType type,
+            std::shared_ptr<CommandResData> respData);
     using MainLoopT = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>;
     MainLoopT main_loop_ptr;
     std::list<LS::Call> callObjects;
     LS::Handle *luna_handle;
     std::list<LS::Message> getTimeClients;
-    std::map<uint16_t,LSMessage*> m_clients;
+    std::map<uint16_t, LSMessage*> m_clients;
     uint16_t m_clientId = 0;
 
     LS::SubscriptionPoint mScanSubscriptions;

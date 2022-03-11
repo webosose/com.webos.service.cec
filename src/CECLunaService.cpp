@@ -23,22 +23,19 @@
 const std::string SERVICE_NAME = "com.webos.service.cec";
 const std::string GET_STATUS_INVALID_PAYLOAD = "Invalid Payload";
 
-CECLunaService::CECLunaService()
-: main_loop_ptr(g_main_loop_new(nullptr, false), g_main_loop_unref), LS::Handle(SERVICE_NAME.c_str())
-{
+CECLunaService::CECLunaService() :
+        main_loop_ptr(g_main_loop_new(nullptr, false), g_main_loop_unref), LS::Handle(SERVICE_NAME.c_str()) {
     registerMethods();
 }
 
-CECLunaService::~CECLunaService()
-{
+CECLunaService::~CECLunaService() {
 
 }
 
 void CECLunaService::registerMethods() {
 
     //Register Luna Methods for CeC service
-    LS_CREATE_CATEGORY_BEGIN(CECLunaService, base)
-    LS_CATEGORY_CLASS_METHOD(CECLunaService, listDevices)
+    LS_CREATE_CATEGORY_BEGIN(CECLunaService, base) LS_CATEGORY_CLASS_METHOD(CECLunaService, listAdapters)
     LS_CATEGORY_CLASS_METHOD(CECLunaService, scan)
     LS_CATEGORY_CLASS_METHOD(CECLunaService, sendCommand)
     LS_CATEGORY_CLASS_METHOD(CECLunaService, getConfig)
@@ -50,32 +47,24 @@ void CECLunaService::registerMethods() {
     mScanSubscriptions.setServiceHandle(this);
 }
 
-void CECLunaService::run()
-{
+void CECLunaService::run() {
     attachToLoop(main_loop_ptr.get());
     g_main_loop_run(main_loop_ptr.get());
 }
 
-void CECLunaService::stop()
-{
+void CECLunaService::stop() {
     g_main_loop_quit(main_loop_ptr.get());
 }
 
-bool CECLunaService::receiveCallback(LSHandle *sh, LSMessage *pMessage, void *pCtx)
-{
-    return true;
-}
-
-bool CECLunaService::listDevices(LSMessage &message) {
+bool CECLunaService::listAdapters(LSMessage &message) {
 
     LS::Message request(&message);
     pbnjson::JValue requestObj;
     const std::string schema = SCHEMA_ANY;
 
     int parseError = 0;
-    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
-    {
-        AppLogError() << "Parser error: CecLunaService::listDevices code: " << parseError << "\n";
+    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
+        AppLogError() << "Parser error: CecLunaService::listAdapters code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
         else
@@ -86,22 +75,23 @@ bool CECLunaService::listDevices(LSMessage &message) {
         LSMessage *requestMessage = request.get();
         LSMessageRef(requestMessage);
         m_clients[++m_clientId] = requestMessage;
-        handleListDevices(requestObj);
+        handleListAdapters(requestObj);
         return true;
     }
 }
 
-void CECLunaService::handleListDevices(pbnjson::JValue &requestObj) {
+void CECLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
 
-    std::shared_ptr<Command> command = std::make_shared<Command>(CommandType::LIST_DEVICES,
-            std::bind(&CECLunaService::listDevicesCb, this, m_clientId, std::placeholders::_1));
+    std::shared_ptr<Command> command = std::make_shared < Command
+            > (CommandType::LIST_ADAPTERS, std::bind(&CECLunaService::callback, this, m_clientId,
+                    CommandType::LIST_ADAPTERS, std::placeholders::_1));
     //Send command to CEC Controller
     //Create sample data and send the response
-    std::shared_ptr<ListDevicesResData> respData = std::make_shared<ListDevicesResData>();
-    std::list<std::string> my_list = { "/dev/cec0", "/dev/cec1" };
-    respData->cecDevices = my_list;
+    std::shared_ptr<ListAdaptersResData> respData = std::make_shared<ListAdaptersResData>();
+    std::list < std::string > my_list = { "/dev/cec0", "/dev/cec1" };
+    respData->cecAdapters = my_list;
     respData->returnValue = true;
-    CECLunaService::listDevicesCb(this, m_clientId, respData);
+    CECLunaService::callback(this, m_clientId, CommandType::LIST_ADAPTERS, respData);
 }
 
 bool CECLunaService::scan(LSMessage &message) {
@@ -110,8 +100,7 @@ bool CECLunaService::scan(LSMessage &message) {
     const std::string schema = SCHEMA_ANY;
 
     int parseError = 0;
-    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
-    {
+    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
         AppLogError() << "Parser error: CecLunaService::scan code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
@@ -127,8 +116,7 @@ bool CECLunaService::scan(LSMessage &message) {
         handleScan(requestObj);
 
         // Handle scan subscription
-        if (request.isSubscription())
-        {
+        if (request.isSubscription()) {
             LS::SubscriptionPoint *subscriptionPoint = new LS::SubscriptionPoint;
             mScanSubscriptions.subscribe(request);
         }
@@ -138,40 +126,42 @@ bool CECLunaService::scan(LSMessage &message) {
 
 void CECLunaService::handleScan(pbnjson::JValue &requestObj) {
 
-    std::shared_ptr<Command> command = std::make_shared<Command>(CommandType::SCAN,
-            std::bind(&CECLunaService::scanCb, this, m_clientId, std::placeholders::_1));
+    std::shared_ptr<Command> command = std::make_shared < Command
+            > (CommandType::SCAN, std::bind(&CECLunaService::callback, this, m_clientId, CommandType::SCAN,
+                    std::placeholders::_1));
 
     std::shared_ptr<ScanReqData> data = std::make_shared<ScanReqData>();
     if (requestObj.hasKey("subscribe")) {
         data->subscribed = requestObj["subscribe"].asBool();
-        command->setData(data);
     }
+
+    if (requestObj.hasKey("adapter")) {
+        data->adapter = requestObj["adapter"].asString();
+    }
+    command->setData(data);
     //Send command to CEC Controller
     //Create sample data and send the response
     std::shared_ptr<ScanResData> respData = std::make_shared<ScanResData>();
-    respData->devices.push_back(CecDevice("SmartTV", "0.0.0.0", "no",
-            "LG", "OLED SmartTV", "1.3a","on",
-            "eng"));
-    respData->devices.push_back(CecDevice("Recorder", "1.0.0.0", "yes",
-            "LG", "CECTester", "1.3b","on",
-            "frh"));
+    respData->devices.push_back(CecDevice("SmartTV", "0.0.0.0", "no", "LG", "OLED SmartTV", "1.3a", "on", "eng"));
+    respData->devices.push_back(CecDevice("Recorder", "1.0.0.0", "yes", "LG", "CECTester", "1.3b", "on", "frh"));
     respData->returnValue = true;
-    CECLunaService::scanCb(this, m_clientId, respData);
+    CECLunaService::callback(this, m_clientId, CommandType::SCAN, respData);
 }
 
 bool CECLunaService::sendCommand(LSMessage &message) {
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = STRICT_SCHEMA(PROPS_5(PROP(device, string), PROP(srcAddress, string),
-                    PROP(destAddress, string), PROP(timeout, string),
-                    OBJECT(command, OBJSCHEMA_2(PROP(name, string),OBJARRAY(args, OBJSCHEMA_2(PROP(arg, string), PROP(value, string)))))) REQUIRED_2(destAddress, command));
+    const std::string schema =
+            STRICT_SCHEMA(
+                    PROPS_5(PROP(device, string), PROP(srcAddress, string), PROP(destAddress, string), PROP(timeout, integer), OBJECT(command, OBJSCHEMA_2(PROP(name, string),OBJARRAY(args, OBJSCHEMA_2(PROP(arg, string), PROP(value, string)))))) REQUIRED_3(srcAddress, destAddress, command));
 
     int parseError = 0;
-    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
-    {
+    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
         AppLogError() << "Parser error: CecLunaService::sendCommand code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
+        else if (!requestObj.hasKey("srcAddress"))
+            LSUtils::respondWithError(request, CEC_ERR_SRCADDR_PARAM_MISSING);
         else if (!requestObj.hasKey("destAddress"))
             LSUtils::respondWithError(request, CEC_ERR_DESTADDR_PARAM_MISSING);
         else if (!requestObj.hasKey("command"))
@@ -191,8 +181,9 @@ bool CECLunaService::sendCommand(LSMessage &message) {
 
 void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
 
-    std::shared_ptr<Command> command = std::make_shared<Command>(CommandType::SEND_COMMAND,
-            std::bind(&CECLunaService::sendCommandCb, this, m_clientId, std::placeholders::_1));
+    std::shared_ptr<Command> command = std::make_shared < Command
+            > (CommandType::SEND_COMMAND, std::bind(&CECLunaService::callback, this, m_clientId,
+                    CommandType::SEND_COMMAND, std::placeholders::_1));
 
     std::shared_ptr<SendCommandReqData> data = std::make_shared<SendCommandReqData>();
     if (requestObj.hasKey("device")) {
@@ -202,7 +193,7 @@ void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
         data->srcAddress = requestObj["srcAddress"].asString();
     }
     if (requestObj.hasKey("timeout")) {
-        data->timeout = requestObj["timeout"].asString();
+        data->timeout = requestObj["timeout"].asNumber<int32_t>();
     }
 
     data->destAddress = requestObj["destAddress"].asString();
@@ -223,22 +214,21 @@ void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
     //Create sample data and send the response
     std::shared_ptr<CommandResData> respData = std::make_shared<CommandResData>();
     respData->returnValue = true;
-    CECLunaService::sendCommandCb(this, m_clientId, respData);
+    CECLunaService::callback(this, m_clientId, CommandType::SEND_COMMAND, respData);
 }
 
 bool CECLunaService::getConfig(LSMessage &message) {
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = STRICT_SCHEMA(PROPS_1(PROP(confName, string)) REQUIRED_1(confName));
+    const std::string schema = STRICT_SCHEMA(PROPS_1(PROP(key, string)) REQUIRED_1(key));
 
     int parseError = 0;
-    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
-    {
+    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
         AppLogError() << "Parser error: CecLunaService::getConfig code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
-        else if (!requestObj.hasKey("confName"))
-            LSUtils::respondWithError(request, CEC_ERR_CONFNAME_PARAM_MISSING);
+        else if (!requestObj.hasKey("key"))
+            LSUtils::respondWithError(request, CEC_ERR_KEY_PARAM_MISSING);
         else
             LSUtils::respondWithError(request, CEC_ERR_SCHEMA_VALIDATION_FAILED);
         return true;
@@ -253,36 +243,36 @@ bool CECLunaService::getConfig(LSMessage &message) {
 
 void CECLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
 
-    std::shared_ptr<Command> command = std::make_shared<Command>(CommandType::GET_CONFIG,
-            std::bind(&CECLunaService::getConfigCb, this, m_clientId, std::placeholders::_1));
+    std::shared_ptr<Command> command = std::make_shared < Command
+            > (CommandType::GET_CONFIG, std::bind(&CECLunaService::callback, this, m_clientId, CommandType::GET_CONFIG,
+                    std::placeholders::_1));
 
     std::shared_ptr<GetConfigReqData> data = std::make_shared<GetConfigReqData>();
-    data->confName = requestObj["confName"].asString();
+    data->key = requestObj["key"].asString();
     command->setData(data);
     //Send command to CEC Controller
     //Create sample data and send the response
     std::shared_ptr<GetConfigResData> respData = std::make_shared<GetConfigResData>();
-    respData->confName = "vendor-id";
-    respData->confValue = "LG";
+    respData->key = "vendor-id";
+    respData->value = "LG";
     respData->returnValue = true;
-    CECLunaService::getConfigCb(this, m_clientId, respData);
+    CECLunaService::callback(this, m_clientId, CommandType::GET_CONFIG, respData);
 }
 
 bool CECLunaService::setConfig(LSMessage &message) {
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = STRICT_SCHEMA(PROPS_2(PROP(confName, string), PROP(confValue, string)) REQUIRED_2(confName, confValue));
+    const std::string schema = STRICT_SCHEMA(PROPS_2(PROP(key, string), PROP(value, string)) REQUIRED_2(key, value));
 
     int parseError = 0;
-    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError))
-    {
+    if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
         AppLogError() << "Parser error: CecLunaService::setConfig code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
-        else if (!requestObj.hasKey("confName"))
-            LSUtils::respondWithError(request, CEC_ERR_CONFNAME_PARAM_MISSING);
-        else if (!requestObj.hasKey("confValue"))
-            LSUtils::respondWithError(request, CEC_ERR_CONFVALUE_PARAM_MISSING);
+        else if (!requestObj.hasKey("key"))
+            LSUtils::respondWithError(request, CEC_ERR_KEY_PARAM_MISSING);
+        else if (!requestObj.hasKey("value"))
+            LSUtils::respondWithError(request, CEC_ERR_VALUE_PARAM_MISSING);
         else
             LSUtils::respondWithError(request, CEC_ERR_SCHEMA_VALIDATION_FAILED);
         return true;
@@ -298,27 +288,29 @@ bool CECLunaService::setConfig(LSMessage &message) {
 void CECLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
 
     std::shared_ptr<Command> command = std::make_shared < Command
-            > (CommandType::SET_CONFIG, std::bind(&CECLunaService::setConfigCb, this, m_clientId, std::placeholders::_1));
+            > (CommandType::SET_CONFIG, std::bind(&CECLunaService::callback, this, m_clientId, CommandType::SET_CONFIG,
+                    std::placeholders::_1));
 
     std::shared_ptr<SetConfigReqData> data = std::make_shared<SetConfigReqData>();
 
-    data->confName = requestObj["confName"].asString();
-    data->confValue = requestObj["confValue"].asString();
+    data->key = requestObj["key"].asString();
+    data->value = requestObj["value"].asString();
     command->setData(data);
     //Send command to CEC Controller
     //Create sample data and send the response
     std::shared_ptr<CommandResData> respData = std::make_shared<CommandResData>();
     respData->returnValue = true;
-    CECLunaService::setConfigCb(this, m_clientId, respData);    //Create sample data and send the response
+    CECLunaService::callback(this, m_clientId, CommandType::SET_CONFIG, respData); //Create sample data and send the response
 }
 
-void CECLunaService::listDevicesCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> respData) {
-    CECLunaService *pThis = static_cast<CECLunaService *>(ctx);
+void CECLunaService::callback(void *ctx, uint16_t clientId, enum CommandType type,
+        std::shared_ptr<CommandResData> respData) {
+    CECLunaService *pThis = static_cast<CECLunaService*>(ctx);
 
-    if(!pThis)
+    if (!pThis)
         return;
 
-    std::shared_ptr < ListDevicesResData > data = std::static_pointer_cast<ListDevicesResData>(respData);
+    std::shared_ptr<ListAdaptersResData> data = std::static_pointer_cast < ListAdaptersResData > (respData);
 
     if (!data)
         return;
@@ -327,13 +319,10 @@ void CECLunaService::listDevicesCb(void *ctx, uint16_t clientId, std::shared_ptr
         LSMessage *requestMessage = pThis->m_clients[clientId];
         LS::Message request(requestMessage);
         if (data->returnValue) {
+            //get response object based on command type
             pbnjson::JValue responseObj = pbnjson::Object();
             responseObj.put("returnValue", true);
-            pbnjson::JValue cecDevicesArray = pbnjson::Array();
-            for (auto const &cecDevice : data->cecDevices) {
-                cecDevicesArray.append(cecDevice);
-            }
-            responseObj.put("cecDevices", cecDevicesArray);
+            pThis->parseResponseObject(responseObj, type, data);
             LSUtils::postToClient(request, responseObj);
         } else {
             if (data->error) {
@@ -346,24 +335,27 @@ void CECLunaService::listDevicesCb(void *ctx, uint16_t clientId, std::shared_ptr
     }
 }
 
-void CECLunaService::scanCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> respData) {
-    CECLunaService *pThis = static_cast<CECLunaService *>(ctx);
+void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum CommandType type,
+        std::shared_ptr<CommandResData> respData) {
+    switch (type) {
+        case CommandType::LIST_ADAPTERS: {
+            std::shared_ptr<ListAdaptersResData> data = std::static_pointer_cast < ListAdaptersResData > (respData);
+            if (!data)
+                return;
+            pbnjson::JValue cecAdaptersArray = pbnjson::Array();
+            for (auto const &cecDevice : data->cecAdapters) {
+                cecAdaptersArray.append(cecDevice);
+            }
+            responseObj.put("cecAdapters", cecAdaptersArray);
+            break;
+        }
+        case CommandType::SCAN: {
+            std::shared_ptr<ScanResData> data = std::static_pointer_cast < ScanResData > (respData);
 
-    if(!pThis)
-        return;
+            if (!data)
+                return;
 
-    std::shared_ptr < ScanResData > data = std::static_pointer_cast<ScanResData>(respData);
-
-    if (!data)
-        return;
-
-    if (pThis->m_clients.find(clientId) != pThis->m_clients.end()) {
-        LSMessage *requestMessage = pThis->m_clients[clientId];
-        LS::Message request(requestMessage);
-        if (data->returnValue) {
-            pbnjson::JValue responseObj = pbnjson::Object();
-            responseObj.put("returnValue", true);
-            pbnjson::JValue cecDevicesArray = pbnjson::Array();
+            pbnjson::JValue devicesArray = pbnjson::Array();
             for (auto const &cecDevice : data->devices) {
                 pbnjson::JValue device = pbnjson::Object();
                 device.put("name", cecDevice.name);
@@ -374,106 +366,27 @@ void CECLunaService::scanCb(void *ctx, uint16_t clientId, std::shared_ptr<Comman
                 device.put("cecVersion", cecDevice.cecVersion);
                 device.put("powerStatus", cecDevice.powerStatus);
                 device.put("language", cecDevice.language);
-                cecDevicesArray.append(device);
+                devicesArray.append(device);
             }
-            responseObj.put("devices", cecDevicesArray);
-            LSUtils::postToClient(request, responseObj);
-        } else {
-            if (data->error) {
-                LSUtils::respondWithError(request, data->error->errorText, data->error->errorCode);
-            } else {
-                LSUtils::respondWithError(request, CEC_ERR_UNKNOWN_ERROR);
-            }
+            responseObj.put("devices", devicesArray);
+            notifyScanStatus(data);
+            break;
         }
-        pThis->m_clients.erase(clientId);
-    }
-    pThis->notifyScanStatus(data);
-}
-
-void CECLunaService::sendCommandCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data) {
-
-    CECLunaService *pThis = static_cast<CECLunaService *>(ctx);
-
-    if(!pThis)
-        return;
-
-    if (!data)
-        return;
-
-    if (pThis->m_clients.find(clientId) != pThis->m_clients.end()) {
-        LSMessage *requestMessage = pThis->m_clients[clientId];
-        LS::Message request(requestMessage);
-        if (data->returnValue) {
-            pbnjson::JValue responseObj = pbnjson::Object();
+        case CommandType::SEND_COMMAND:
+        case CommandType::SET_CONFIG: {
             responseObj.put("returnValue", true);
-            LSUtils::postToClient(request, responseObj);
-        } else {
-            if (data->error) {
-                LSUtils::respondWithError(request, data->error->errorText, data->error->errorCode);
-            } else {
-                LSUtils::respondWithError(request, CEC_ERR_UNKNOWN_ERROR);
-            }
+            break;
         }
-        pThis->m_clients.erase(clientId);
-    }
-}
+        case CommandType::GET_CONFIG: {
+            std::shared_ptr<GetConfigResData> data = std::static_pointer_cast < GetConfigResData > (respData);
 
-void CECLunaService::getConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> respData) {
-    CECLunaService *pThis = static_cast<CECLunaService *>(ctx);
-
-    if(!pThis)
-        return;
-
-    std::shared_ptr < GetConfigResData > data = std::static_pointer_cast<GetConfigResData>(respData);
-
-    if (!data)
-        return;
-
-    if (pThis->m_clients.find(clientId) != pThis->m_clients.end()) {
-        LSMessage *requestMessage = pThis->m_clients[clientId];
-        LS::Message request(requestMessage);
-        if (data->returnValue) {
-            pbnjson::JValue responseObj = pbnjson::Object();
+            if (!data)
+                return;
             responseObj.put("returnValue", true);
-            responseObj.put("confName", data->confName);
-            responseObj.put("confValue", data->confValue);
-            LSUtils::postToClient(request, responseObj);
-        } else {
-            if (data->error) {
-                LSUtils::respondWithError(request, data->error->errorText, data->error->errorCode);
-            } else {
-                LSUtils::respondWithError(request, CEC_ERR_UNKNOWN_ERROR);
-            }
+            responseObj.put("key", data->key);
+            responseObj.put("value", data->value);
+            break;
         }
-        pThis->m_clients.erase(clientId);
-    }
-}
-
-void CECLunaService::setConfigCb(void *ctx, uint16_t clientId, std::shared_ptr<CommandResData> data) {
-
-    CECLunaService *pThis = static_cast<CECLunaService *>(ctx);
-
-    if(!pThis)
-        return;
-
-    if (!data)
-        return;
-
-    if (pThis->m_clients.find(clientId) != pThis->m_clients.end()) {
-        LSMessage *requestMessage = pThis->m_clients[clientId];
-        LS::Message request(requestMessage);
-        if (data->returnValue) {
-            pbnjson::JValue responseObj = pbnjson::Object();
-            responseObj.put("returnValue", true);
-            LSUtils::postToClient(request, responseObj);
-        } else {
-            if (data->error) {
-                LSUtils::respondWithError(request, data->error->errorText, data->error->errorCode);
-            } else {
-                LSUtils::respondWithError(request, CEC_ERR_UNKNOWN_ERROR);
-            }
-        }
-        pThis->m_clients.erase(clientId);
     }
 }
 

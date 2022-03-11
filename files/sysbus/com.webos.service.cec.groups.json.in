@@ -3,7 +3,7 @@
     "com.webos.service.cec"
   ],
   "cec.query": [
-    "dev"
+    "oem"
   ],
   "cec.operation": [
     "oem"

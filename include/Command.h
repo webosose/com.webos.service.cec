@@ -17,7 +17,7 @@
 #pragma once
 
 enum CommandType {
-    LIST_DEVICES, SCAN, SEND_COMMAND, GET_CONFIG, SET_CONFIG
+    LIST_ADAPTERS, SCAN, SEND_COMMAND, GET_CONFIG, SET_CONFIG
 };
 
 typedef struct ErrorInfo {
@@ -26,15 +26,17 @@ typedef struct ErrorInfo {
 } ErrorInfo;
 
 struct CommandReqData {
-    virtual ~CommandReqData(){};
+    virtual ~CommandReqData() {
+    }
 };
 
-struct ListDevicesReqData: public CommandReqData {
+struct ListAdaptersReqData: public CommandReqData {
 
 };
 
 struct ScanReqData: public CommandReqData {
     bool subscribed;
+    std::string adapter = "HDMI0";
 };
 
 struct CecCommandArgs {
@@ -51,27 +53,28 @@ struct SendCommandReqData: public CommandReqData {
     std::string device;
     std::string srcAddress;
     std::string destAddress;
-    std::string timeout;
+    int32_t timeout = 1000;
     CecCommand command;
 };
 
 struct GetConfigReqData: public CommandReqData {
-    std::string confName;
+    std::string key;
 };
 
 struct SetConfigReqData: public CommandReqData {
-    std::string confName;
-    std::string confValue;
+    std::string key;
+    std::string value;
 };
 
 struct CommandResData {
     bool returnValue;
     std::shared_ptr<ErrorInfo> error;
-    virtual ~CommandResData(){};
+    virtual ~CommandResData() {
+    }
 };
 
-struct ListDevicesResData: public CommandResData {
-    std::list<std::string> cecDevices;
+struct ListAdaptersResData: public CommandResData {
+    std::list<std::string> cecAdapters;
 };
 
 struct CecDevice {
@@ -96,8 +99,8 @@ struct ScanResData: public CommandResData {
 };
 
 struct GetConfigResData: public CommandResData {
-    std::string confName;
-    std::string confValue;
+    std::string key;
+    std::string value;
 };
 
 typedef std::function<void(std::shared_ptr<CommandResData>)> CommandCallback;
@@ -107,7 +110,8 @@ public:
     Command(enum CommandType type, CommandCallback callback) :
             m_commandType(type), m_callback(callback) {
     }
-    virtual ~Command(){};
+    virtual ~Command() {
+    }
     void setData(std::shared_ptr<CommandReqData> data) {
         m_data = data;
     }

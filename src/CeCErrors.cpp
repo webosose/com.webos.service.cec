@@ -20,12 +20,18 @@
 
 static std::map<CecErrorCode, std::string> cecErrorTextTable =
 {
-	{CEC_ERR_BAD_JSON, "Invalid JSON input"},
+    {CEC_ERR_BAD_JSON, "Invalid JSON format"},
     {CEC_ERR_SCHEMA_VALIDATION_FAILED, "The JSON input does not match the expected schema"},
+    {CEC_INVALID_INPUT_PARAM, "Invalid input parameter"},
+    {CEC_INPUT_DEVICE_NOT_FOUND, "Input device not found"},
+    {CEC_DEST_DEVICE_NOT_FOUND, "Destination device not found"},
+    {CEC_INVALID_INPUT_COMMAND, "Invalid input command"},
     {CEC_ERR_DESTADDR_PARAM_MISSING, "Required destination address parameter is missing"},
+    {CEC_ERR_SRCADDR_PARAM_MISSING, "Required source address parameter is missing"},
     {CEC_ERR_COMMAND_PARAM_MISSING, "Required command parameter is missing"},
-    {CEC_ERR_CONFNAME_PARAM_MISSING, "Required parameter config name is missing"},
-	{CEC_ERR_CONFVALUE_PARAM_MISSING, "Required parameter config value is missing"},
+    {CEC_ERR_KEY_PARAM_MISSING, "Required parameter key is missing"},
+    {CEC_ERR_NO_CEC_ADAPTER_FOUND,"No cec adapter exist"},
+    {CEC_ERR_VALUE_PARAM_MISSING, "Required parameter value is missing"},
     {CEC_ERR_INVALID_PROVIDER_PAYLOAD, "Invalid payload received from provider"},
     {CEC_ERR_UNKNOWN_ERROR, "Unknown error"}
 };

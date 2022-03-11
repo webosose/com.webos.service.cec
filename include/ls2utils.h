@@ -14,8 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef LS2_UTILS_H_
-#define LS2_UTILS_H_
+#pragma once
 
 #include <string>
 
@@ -196,5 +195,3 @@ inline void postToClient(LSMessage *message, pbnjson::JValue &object)
 }
 
 } // namespace LSUtils
-
-#endif
