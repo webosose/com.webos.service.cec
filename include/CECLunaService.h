@@ -26,9 +26,8 @@
 
 #include "Logger.h"
 #include "Command.h"
-#include "IScanObserver.h"
 
-class CECLunaService: public LS::Handle, public IScanObserver {
+class CECLunaService: public LS::Handle {
 public:
     CECLunaService();
 
@@ -50,8 +49,6 @@ public:
 
     bool setConfig(LSMessage &message);
 
-    void notifyScanStatus(std::shared_ptr<ScanResData> data);
-
     static void callback(void *ctx, uint16_t clientId, enum CommandType type, std::shared_ptr<CommandResData> respData);
 private:
 
@@ -69,6 +66,4 @@ private:
     std::list<LS::Message> getTimeClients;
     std::map<uint16_t, LSMessage*> m_clients;
     uint16_t m_clientId = 0;
-
-    LS::SubscriptionPoint mScanSubscriptions;
 };

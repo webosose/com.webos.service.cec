@@ -44,7 +44,6 @@ void CECLunaService::registerMethods() {
 
     registerCategory("/", LS_CATEGORY_TABLE_NAME(base), NULL, NULL);
     setCategoryData("/", this);
-    mScanSubscriptions.setServiceHandle(this);
 }
 
 void CECLunaService::run() {
@@ -114,12 +113,6 @@ bool CECLunaService::scan(LSMessage &message) {
         LSMessageRef(requestMessage);
         m_clients[++m_clientId] = requestMessage;
         handleScan(requestObj);
-
-        // Handle scan subscription
-        if (request.isSubscription()) {
-            LS::SubscriptionPoint *subscriptionPoint = new LS::SubscriptionPoint;
-            mScanSubscriptions.subscribe(request);
-        }
         return true;
     }
 }
@@ -131,9 +124,6 @@ void CECLunaService::handleScan(pbnjson::JValue &requestObj) {
                     std::placeholders::_1));
 
     std::shared_ptr<ScanReqData> data = std::make_shared<ScanReqData>();
-    if (requestObj.hasKey("subscribe")) {
-        data->subscribed = requestObj["subscribe"].asBool();
-    }
 
     if (requestObj.hasKey("adapter")) {
         data->adapter = requestObj["adapter"].asString();
@@ -369,7 +359,6 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
                 devicesArray.append(device);
             }
             responseObj.put("devices", devicesArray);
-            notifyScanStatus(data);
             break;
         }
         case CommandType::SEND_COMMAND:
@@ -388,27 +377,4 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
             break;
         }
     }
-}
-
-void CECLunaService::notifyScanStatus(std::shared_ptr<ScanResData> data) {
-
-    pbnjson::JValue respObj = pbnjson::Object();
-    respObj.put("returnValue", true);
-    respObj.put("subscribed", true);
-    pbnjson::JValue cecDevicesArray = pbnjson::Array();
-    for (auto const &cecDevice : data->devices) {
-        pbnjson::JValue device = pbnjson::Object();
-        device.put("name", cecDevice.name);
-        device.put("address", cecDevice.address);
-        device.put("activeSource", cecDevice.activeSource);
-        device.put("vendor", cecDevice.vendor);
-        device.put("osdString", cecDevice.osdString);
-        device.put("cecVersion", cecDevice.cecVersion);
-        device.put("powerStatus", cecDevice.powerStatus);
-        device.put("language", cecDevice.language);
-        cecDevicesArray.append(device);
-    }
-    respObj.put("devices", cecDevicesArray);
-
-    LSUtils::postToSubscriptionPoint(&mScanSubscriptions, respObj);
 }

@@ -35,7 +35,6 @@ struct ListAdaptersReqData: public CommandReqData {
 };
 
 struct ScanReqData: public CommandReqData {
-    bool subscribed;
     std::string adapter = "HDMI0";
 };
 
