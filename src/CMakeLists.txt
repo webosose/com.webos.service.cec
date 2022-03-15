@@ -23,6 +23,10 @@ include_directories(${LS2_INCLUDE_DIRS})
 pkg_check_modules(PBNJSON_CPP REQUIRED pbnjson_cpp)
 include_directories(${PBNJSON_CPP_INCLUDE_DIRS})
 
+pkg_check_modules(NYXLIB REQUIRED nyx)
+include_directories(${NYXLIB_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${NYXLIB_CFLAGS_OTHER})
+
 if (USE_PMLOG)
     pkg_check_modules(PMLOGLIB REQUIRED PmLogLibCpp)
     include_directories(${PMLOGLIB_INCLUDE_DIRS})
@@ -43,6 +47,7 @@ add_executable(${CMAKE_PROJECT_NAME} ${CEC_SRC})
 set(CEC_LIBS
     ${LS2_LDFLAGS}
     ${GLIB2_LDFLAGS}
+    ${NYXLIB_LDFLAGS}
     ${PMLOGLIB_LDFLAGS}
     ${PBNJSON_CPP_LDFLAGS}
     -lpthread

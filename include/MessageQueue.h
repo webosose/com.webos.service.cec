@@ -9,29 +9,46 @@
 #include <glib.h>
 #include <functional>
 #include <unistd.h>
+#include <unordered_map>
 #include "Logger.h"
+#include "Command.h"
+#include <nyx/nyx_client.h>
 
+typedef std::function<void(CommandType, std::vector<std::string>)> MsgCallback;
+
+struct MessageData
+{
+    CommandType type;
+    std::unordered_map<std::string, std::string> params;
+};
 
 class MessageQueue
 {
 public:
-	MessageQueue();
-	~MessageQueue();
-
-	void dispatchMessage();
-	void sampleCallback(std::string);
-	void addMessage(std::shared_ptr<nyx_cec_command>);
-	bool handleMessage(std::shared_ptr<nyx_cec_command>);
-	void sampleCallback(std::string);
-
-
+    MessageQueue();
+    ~MessageQueue();
+    void addMessage(std::shared_ptr<MessageData>);
+    void setCallback(MsgCallback);
+    static void nyxCallback(nyx_cec_response_t *);
 
 private:
-	std::vector<std::shared_ptr<nyx_cec_command>> mQueue;
-	std::thread mThread;
-	std::mutex mMutex;
-	std::condition_variable mCondVar;
-	volatile bool mQuit;
-	CecNyxInterface call;
+    void dispatchMessage();
+    bool handleMessage(std::shared_ptr<MessageData>);
+    void init();
+
+    void listAdapters(std::shared_ptr<MessageData>);
+    void sendCommand(std::shared_ptr<MessageData>);
+    void getConfig(std::shared_ptr<MessageData>);
+    void setConfig(std::shared_ptr<MessageData>);
+
+
+    std::vector<std::shared_ptr<MessageData>> mQueue;
+    std::thread mThread;
+    std::mutex mMutex;
+    std::condition_variable mCondVar;
+    bool mQuit;
+    MsgCallback mCb;
+    nyx_device_handle_t mDevice;
+
 };
 
