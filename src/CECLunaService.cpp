@@ -19,6 +19,7 @@
 #include "CeCErrors.h"
 #include "ls2utils.h"
 #include "CECLunaService.h"
+#include "CecController.h"
 
 const std::string SERVICE_NAME = "com.webos.service.cec";
 
@@ -84,12 +85,7 @@ void CECLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
             > (CommandType::LIST_ADAPTERS, std::bind(&CECLunaService::callback, this, m_clientId,
                     CommandType::LIST_ADAPTERS, std::placeholders::_1));
     //Send command to CEC Controller
-    //Create sample data and send the response
-    std::shared_ptr<ListAdaptersResData> respData = std::make_shared<ListAdaptersResData>();
-    std::list < std::string > my_list = { "cec0", "cec1" };
-    respData->cecAdapters = my_list;
-    respData->returnValue = true;
-    CECLunaService::callback(this, m_clientId, CommandType::LIST_ADAPTERS, respData);
+    CecController::getInstance()->HandleCommand(command);
 }
 
 bool CECLunaService::scan(LSMessage &message) {
@@ -129,12 +125,7 @@ void CECLunaService::handleScan(pbnjson::JValue &requestObj) {
     }
     command->setData(data);
     //Send command to CEC Controller
-    //Create sample data and send the response
-    std::shared_ptr<ScanResData> respData = std::make_shared<ScanResData>();
-    respData->devices.push_back(CecDevice("Playback Device", "0.0.0.0", "no", "LG", "Smart Playback", "1.3a", "on", "eng"));
-    respData->devices.push_back(CecDevice("Recorder", "1.0.0.0", "yes", "LG", "CECTester", "1.3b", "on", "frn"));
-    respData->returnValue = true;
-    CECLunaService::callback(this, m_clientId, CommandType::SCAN, respData);
+    CecController::getInstance()->HandleCommand(command);
 }
 
 bool CECLunaService::sendCommand(LSMessage &message) {
@@ -213,14 +204,7 @@ void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
 
     command->setData(data);
     //Send command to CEC Controller
-    //Create sample data and send the response
-    std::shared_ptr<SendCommandResData> respData = std::make_shared<SendCommandResData>();
-    SendCommandPayload payload;
-    payload.key = "language";
-    payload.value = "eng";
-    respData->payload.push_back(payload);
-    respData->returnValue = true;
-    CECLunaService::callback(this, m_clientId, CommandType::SEND_COMMAND, respData);
+    CecController::getInstance()->HandleCommand(command);
 }
 
 bool CECLunaService::getConfig(LSMessage &message) {
@@ -260,12 +244,7 @@ void CECLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
     }
     command->setData(data);
     //Send command to CEC Controller
-    //Create sample data and send the response
-    std::shared_ptr<GetConfigResData> respData = std::make_shared<GetConfigResData>();
-    respData->key = "vendor-id";
-    respData->value = "LG";
-    respData->returnValue = true;
-    CECLunaService::callback(this, m_clientId, CommandType::GET_CONFIG, respData);
+    CecController::getInstance()->HandleCommand(command);
 }
 
 bool CECLunaService::setConfig(LSMessage &message) {
@@ -310,10 +289,7 @@ void CECLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
     }
     command->setData(data);
     //Send command to CEC Controller
-    //Create sample data and send the response
-    std::shared_ptr<CommandResData> respData = std::make_shared<CommandResData>();
-    respData->returnValue = true;
-    CECLunaService::callback(this, m_clientId, CommandType::SET_CONFIG, respData); //Create sample data and send the response
+    CecController::getInstance()->HandleCommand(command);
 }
 
 void CECLunaService::callback(void *ctx, uint16_t clientId, enum CommandType type,
