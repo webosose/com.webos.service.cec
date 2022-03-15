@@ -37,9 +37,11 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 include_directories( ${CMAKE_SOURCE_DIR}/include)
+include_directories( ${CMAKE_SOURCE_DIR}/include/private)
 
 file(GLOB CEC_SRC
         ${CMAKE_SOURCE_DIR}/src/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/handlers/*.cpp
 )
 
 add_executable(${CMAKE_PROJECT_NAME} ${CEC_SRC})
