@@ -16,6 +16,9 @@
 
 #pragma once
 
+const std::string DEFAULT_CEC_ADAPTER = "cec0";
+const int DEFAULT_REPLY_TIMEOUT_MS = 1000;
+
 enum CommandType {
     LIST_ADAPTERS, SCAN, SEND_COMMAND, GET_CONFIG, SET_CONFIG
 };
@@ -35,34 +38,35 @@ struct ListAdaptersReqData: public CommandReqData {
 };
 
 struct ScanReqData: public CommandReqData {
-    std::string adapter = "HDMI0";
+    std::string adapter = DEFAULT_CEC_ADAPTER;
 };
 
-struct CecCommandArgs {
+struct CecCommandArg {
     std::string arg;
     std::string value;
 };
 
 struct CecCommand {
     std::string name;
-    CecCommandArgs args;
+    std::vector<CecCommandArg> args;
 };
 
 struct SendCommandReqData: public CommandReqData {
-    std::string device;
-    std::string srcAddress;
+    std::string adapter = DEFAULT_CEC_ADAPTER;
     std::string destAddress;
-    int32_t timeout = 1000;
+    int32_t timeout = DEFAULT_REPLY_TIMEOUT_MS;
     CecCommand command;
 };
 
 struct GetConfigReqData: public CommandReqData {
     std::string key;
+    std::string adapter = DEFAULT_CEC_ADAPTER;
 };
 
 struct SetConfigReqData: public CommandReqData {
     std::string key;
     std::string value;
+    std::string adapter = DEFAULT_CEC_ADAPTER;
 };
 
 struct CommandResData {
@@ -81,20 +85,29 @@ struct CecDevice {
     std::string address;
     std::string activeSource;
     std::string vendor;
-    std::string osdString;
+    std::string osd;
     std::string cecVersion;
     std::string powerStatus;
     std::string language;
 
     CecDevice(std::string nam, std::string addr, std::string activeSrc, std::string vdr, std::string osdStr,
             std::string cecVer, std::string powerStat, std::string lang) :
-            name(nam), address(addr), activeSource(activeSrc), vendor(vdr), osdString(osdStr), cecVersion(cecVer), powerStatus(
+            name(nam), address(addr), activeSource(activeSrc), vendor(vdr), osd(osdStr), cecVersion(cecVer), powerStatus(
                     powerStat), language(lang) {
     }
 };
 
 struct ScanResData: public CommandResData {
     std::list<CecDevice> devices;
+};
+
+struct SendCommandPayload {
+    std::string key;
+    std::string value;
+};
+
+struct SendCommandResData: public CommandResData {
+    std::vector<SendCommandPayload> payload;
 };
 
 struct GetConfigResData: public CommandResData {
@@ -119,6 +132,10 @@ public:
     }
     enum CommandType getType() {
         return m_commandType;
+    }
+
+    CommandCallback getCallback() {
+        return m_callback;
     }
 
 private:

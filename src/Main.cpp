@@ -16,8 +16,7 @@
 
 #include <CECLunaService.h>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     try {
         CECLunaService luna_service;
         luna_service.run();

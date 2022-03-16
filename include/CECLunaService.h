@@ -62,8 +62,6 @@ private:
     using MainLoopT = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>;
     MainLoopT main_loop_ptr;
     std::list<LS::Call> callObjects;
-    LS::Handle *luna_handle;
-    std::list<LS::Message> getTimeClients;
     std::map<uint16_t, LSMessage*> m_clients;
     uint16_t m_clientId = 0;
 };

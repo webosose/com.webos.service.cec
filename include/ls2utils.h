@@ -46,6 +46,7 @@
 
 // Build a schema as a const char * string without any execution overhead
 #define SCHEMA_ANY                                    "{}"
+#define SCHEMA_EMPTY                                  "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"
 #define SCHEMA_1(param)                               "{\"type\":\"object\",\"properties\":{" param "},\"additionalProperties\":false}"
 
 #define PROPS_1(p1)                                   ",\"properties\":{" p1 "}"
@@ -80,6 +81,8 @@
 #define OBJSCHEMA_7(p1, p2, p3, p4, p5, p6, p7)       "{\"type\":\"object\",\"properties\":{" p1 "," p2 ", " p3 ", " p4 ", " p5 ", " p6 ", " p7 "}}"
 #define OBJSCHEMA_8(p1, p2, p3, p4, p5, p6, p7, p8)   "{\"type\":\"object\",\"properties\":{" p1 "," p2 ", " p3 ", " p4 ", " p5 ", " p6 ", " p7 ", " p8 "}}"
 #define OBJSCHEMA_11(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)   "{\"type\":\"object\",\"properties\":{" p1 "," p2 ", " p3 ", " p4 ", " p5 ", " p6 ", " p7 ", " p8 ", " p9 ", " p10 ", " p11 "}}"
+
+#define OBJSCHEMA_2_STRICT(p1, p2, requires)          "{\"type\":\"object\",\"properties\":{" p1 "," p2 "}" requires ",\"additionalProperties\":false}"
 
 #define OBJECT(name, objschema)                       "\"" #name "\":" objschema
 

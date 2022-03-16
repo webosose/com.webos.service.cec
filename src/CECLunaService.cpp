@@ -21,7 +21,6 @@
 #include "CECLunaService.h"
 
 const std::string SERVICE_NAME = "com.webos.service.cec";
-const std::string GET_STATUS_INVALID_PAYLOAD = "Invalid Payload";
 
 CECLunaService::CECLunaService() :
         main_loop_ptr(g_main_loop_new(nullptr, false), g_main_loop_unref), LS::Handle(SERVICE_NAME.c_str()) {
@@ -59,7 +58,7 @@ bool CECLunaService::listAdapters(LSMessage &message) {
 
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = SCHEMA_ANY;
+    const std::string schema = SCHEMA_EMPTY;
 
     int parseError = 0;
     if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
@@ -87,7 +86,7 @@ void CECLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
     //Send command to CEC Controller
     //Create sample data and send the response
     std::shared_ptr<ListAdaptersResData> respData = std::make_shared<ListAdaptersResData>();
-    std::list < std::string > my_list = { "/dev/cec0", "/dev/cec1" };
+    std::list < std::string > my_list = { "cec0", "cec1" };
     respData->cecAdapters = my_list;
     respData->returnValue = true;
     CECLunaService::callback(this, m_clientId, CommandType::LIST_ADAPTERS, respData);
@@ -96,7 +95,7 @@ void CECLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
 bool CECLunaService::scan(LSMessage &message) {
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = SCHEMA_ANY;
+    const std::string schema = SCHEMA_1(PROP(adapter, string));
 
     int parseError = 0;
     if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
@@ -132,8 +131,8 @@ void CECLunaService::handleScan(pbnjson::JValue &requestObj) {
     //Send command to CEC Controller
     //Create sample data and send the response
     std::shared_ptr<ScanResData> respData = std::make_shared<ScanResData>();
-    respData->devices.push_back(CecDevice("SmartTV", "0.0.0.0", "no", "LG", "OLED SmartTV", "1.3a", "on", "eng"));
-    respData->devices.push_back(CecDevice("Recorder", "1.0.0.0", "yes", "LG", "CECTester", "1.3b", "on", "frh"));
+    respData->devices.push_back(CecDevice("Playback Device", "0.0.0.0", "no", "LG", "Smart Playback", "1.3a", "on", "eng"));
+    respData->devices.push_back(CecDevice("Recorder", "1.0.0.0", "yes", "LG", "CECTester", "1.3b", "on", "frn"));
     respData->returnValue = true;
     CECLunaService::callback(this, m_clientId, CommandType::SCAN, respData);
 }
@@ -143,15 +142,23 @@ bool CECLunaService::sendCommand(LSMessage &message) {
     pbnjson::JValue requestObj;
     const std::string schema =
             STRICT_SCHEMA(
-                    PROPS_5(PROP(device, string), PROP(srcAddress, string), PROP(destAddress, string), PROP(timeout, integer), OBJECT(command, OBJSCHEMA_2(PROP(name, string),OBJARRAY(args, OBJSCHEMA_2(PROP(arg, string), PROP(value, string)))))) REQUIRED_3(srcAddress, destAddress, command));
+                    PROPS_4(PROP(adapter, string),
+                            PROP(destAddress, string),
+                            PROP(timeout, integer),
+                            OBJECT(command, OBJSCHEMA_2_STRICT(
+                                    PROP(name, string),
+                                    OBJARRAY(args, OBJSCHEMA_2_STRICT(
+                                            PROP(arg, string),
+                                            PROP(value, string),
+                                            REQUIRED_1(arg))),
+                                    REQUIRED_2(name, args))))
+                    REQUIRED_2(destAddress, command));
 
     int parseError = 0;
     if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
         AppLogError() << "Parser error: CecLunaService::sendCommand code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
-        else if (!requestObj.hasKey("srcAddress"))
-            LSUtils::respondWithError(request, CEC_ERR_SRCADDR_PARAM_MISSING);
         else if (!requestObj.hasKey("destAddress"))
             LSUtils::respondWithError(request, CEC_ERR_DESTADDR_PARAM_MISSING);
         else if (!requestObj.hasKey("command"))
@@ -176,33 +183,42 @@ void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
                     CommandType::SEND_COMMAND, std::placeholders::_1));
 
     std::shared_ptr<SendCommandReqData> data = std::make_shared<SendCommandReqData>();
-    if (requestObj.hasKey("device")) {
-        data->device = requestObj["device"].asString();
+    if (requestObj.hasKey("adapter")) {
+        data->adapter = requestObj["adapter"].asString();
     }
-    if (requestObj.hasKey("srcAddress")) {
-        data->srcAddress = requestObj["srcAddress"].asString();
-    }
+
+    data->destAddress = requestObj["destAddress"].asString();
     if (requestObj.hasKey("timeout")) {
         data->timeout = requestObj["timeout"].asNumber<int32_t>();
     }
 
-    data->destAddress = requestObj["destAddress"].asString();
     CecCommand ceccommand;
     auto cecCommandObj = requestObj["command"];
     ceccommand.name = cecCommandObj["name"].asString();
     if (cecCommandObj.hasKey("args")) {
-        auto cecCommandArgsObj = requestObj["args"];
-        CecCommandArgs commandArgs;
-        commandArgs.arg = cecCommandArgsObj["name"].asString();
-        commandArgs.value = cecCommandArgsObj["value"].asString();
-        ceccommand.args = commandArgs;
+        auto argsObj = cecCommandObj["args"];
+        ssize_t argsSize = argsObj.arraySize();
+
+        for (auto i = 0; i < argsSize; ++i) {
+            auto argObj = argsObj[i];
+            CecCommandArg commandArg;
+            commandArg.arg = argObj["name"].asString();
+            if (argObj.hasKey("value")) {
+                commandArg.value = argObj["value"].asString();
+            }
+            ceccommand.args.push_back(commandArg);
+        }
     }
     data->command = ceccommand;
 
     command->setData(data);
     //Send command to CEC Controller
     //Create sample data and send the response
-    std::shared_ptr<CommandResData> respData = std::make_shared<CommandResData>();
+    std::shared_ptr<SendCommandResData> respData = std::make_shared<SendCommandResData>();
+    SendCommandPayload payload;
+    payload.key = "language";
+    payload.value = "eng";
+    respData->payload.push_back(payload);
     respData->returnValue = true;
     CECLunaService::callback(this, m_clientId, CommandType::SEND_COMMAND, respData);
 }
@@ -210,7 +226,7 @@ void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
 bool CECLunaService::getConfig(LSMessage &message) {
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = STRICT_SCHEMA(PROPS_1(PROP(key, string)) REQUIRED_1(key));
+    const std::string schema = STRICT_SCHEMA(PROPS_2(PROP(key, string), PROP(adapter, string)) REQUIRED_1(key));
 
     int parseError = 0;
     if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
@@ -239,6 +255,9 @@ void CECLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
 
     std::shared_ptr<GetConfigReqData> data = std::make_shared<GetConfigReqData>();
     data->key = requestObj["key"].asString();
+    if (requestObj.hasKey("adapter")) {
+        data->adapter = requestObj["adapter"].asString();
+    }
     command->setData(data);
     //Send command to CEC Controller
     //Create sample data and send the response
@@ -252,7 +271,8 @@ void CECLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
 bool CECLunaService::setConfig(LSMessage &message) {
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = STRICT_SCHEMA(PROPS_2(PROP(key, string), PROP(value, string)) REQUIRED_2(key, value));
+    const std::string schema = STRICT_SCHEMA(
+            PROPS_3(PROP(key, string), PROP(value, string), PROP(adapter, string)) REQUIRED_2(key, value));
 
     int parseError = 0;
     if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {
@@ -285,6 +305,9 @@ void CECLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
 
     data->key = requestObj["key"].asString();
     data->value = requestObj["value"].asString();
+    if (requestObj.hasKey("adapter")) {
+        data->adapter = requestObj["adapter"].asString();
+    }
     command->setData(data);
     //Send command to CEC Controller
     //Create sample data and send the response
@@ -300,23 +323,18 @@ void CECLunaService::callback(void *ctx, uint16_t clientId, enum CommandType typ
     if (!pThis)
         return;
 
-    std::shared_ptr<ListAdaptersResData> data = std::static_pointer_cast < ListAdaptersResData > (respData);
-
-    if (!data)
-        return;
-
     if (pThis->m_clients.find(clientId) != pThis->m_clients.end()) {
         LSMessage *requestMessage = pThis->m_clients[clientId];
         LS::Message request(requestMessage);
-        if (data->returnValue) {
+        if (respData->returnValue) {
             //get response object based on command type
             pbnjson::JValue responseObj = pbnjson::Object();
             responseObj.put("returnValue", true);
-            pThis->parseResponseObject(responseObj, type, data);
+            pThis->parseResponseObject(responseObj, type, respData);
             LSUtils::postToClient(request, responseObj);
         } else {
-            if (data->error) {
-                LSUtils::respondWithError(request, data->error->errorText, data->error->errorCode);
+            if (respData->error) {
+                LSUtils::respondWithError(request, respData->error->errorText, respData->error->errorCode);
             } else {
                 LSUtils::respondWithError(request, CEC_ERR_UNKNOWN_ERROR);
             }
@@ -332,6 +350,7 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
             std::shared_ptr<ListAdaptersResData> data = std::static_pointer_cast < ListAdaptersResData > (respData);
             if (!data)
                 return;
+
             pbnjson::JValue cecAdaptersArray = pbnjson::Array();
             for (auto const &cecDevice : data->cecAdapters) {
                 cecAdaptersArray.append(cecDevice);
@@ -352,7 +371,7 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
                 device.put("address", cecDevice.address);
                 device.put("activeSource", cecDevice.activeSource);
                 device.put("vendor", cecDevice.vendor);
-                device.put("osdString", cecDevice.osdString);
+                device.put("osd", cecDevice.osd);
                 device.put("cecVersion", cecDevice.cecVersion);
                 device.put("powerStatus", cecDevice.powerStatus);
                 device.put("language", cecDevice.language);
@@ -361,9 +380,22 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
             responseObj.put("devices", devicesArray);
             break;
         }
-        case CommandType::SEND_COMMAND:
+        case CommandType::SEND_COMMAND: {
+            std::shared_ptr<SendCommandResData> data = std::static_pointer_cast < SendCommandResData > (respData);
+
+            if (data && data->payload.size()) {
+                pbnjson::JValue responseArray = pbnjson::Array();
+                for (auto &element : data->payload) {
+                    pbnjson::JValue response = pbnjson::Object();
+                    response.put(element.key, element.value);
+                    responseArray.append(response);
+                }
+                responseObj.put("payload", responseArray);
+            }
+            break;
+        }
         case CommandType::SET_CONFIG: {
-            responseObj.put("returnValue", true);
+            //Nothing to handle
             break;
         }
         case CommandType::GET_CONFIG: {
@@ -371,7 +403,6 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
 
             if (!data)
                 return;
-            responseObj.put("returnValue", true);
             responseObj.put("key", data->key);
             responseObj.put("value", data->value);
             break;
