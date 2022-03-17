@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 LG Electronics, Inc.
+// Copyright (c) 2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 #define _DEFAULTCECHANDLER_H_
 
 #include <vector>
+#include <mutex>
+
 #include "CecHandler.h"
 #include "CecController.h"
 #include "MessageQueue.h"
@@ -26,8 +28,10 @@ class DefaultCecHandler : public CecHandler
 {
   private:
     static bool mIsObjRegistered;
+    static std::list<std::shared_ptr<Command>> mCmdList;
+    static std::mutex mMutex;
+    static std::list<CecDevice> mDeviceInfoList;
     HandlerRank mRank = DEFAULT_RANK;
-    std::list<std::shared_ptr<Command>> cmdList;
 
     DefaultCecHandler();
 
@@ -43,7 +47,15 @@ class DefaultCecHandler : public CecHandler
     bool HandleGetConfig(std::shared_ptr<Command> command);
     bool HandleSetConfig(std::shared_ptr<Command> command);
 
-    static void HandleSendCommandCb(std::vector<std::string> response);
+    static void HandleSystemInfoResp(std::shared_ptr<SendCommandReqData> commandData, std::vector<std::string> resp, std::shared_ptr<SendCommandResData> respCmd);
+    static std::string GetValue(std::string str);
+    static void HandleMessageCb(CommandType type, std::vector<std::string> resp);
+
+    static void HandleSendCommandCb(std::vector<std::string> resp);
+    static void HandleScanCb(std::vector<std::string> resp);
+    static void HandleListAdaptersCb(std::vector<std::string> resp);
+    static void HandleGetConfigCb(std::vector<std::string> resp);
+    static void HandleSetConfigCb(std::vector<std::string> resp);
 
     MessageQueue mQueue;
 
@@ -59,7 +71,7 @@ class DefaultCecHandler : public CecHandler
       }
     }
     bool HandleCommand(std::shared_ptr<Command> command);
-    std::string GetDeviceInfo(std::string destAddress);
+    std::shared_ptr<CecDevice> GetDeviceInfo(std::string destAddress);
     HandlerRank GetRank() { return mRank; }
 };
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 LG Electronics, Inc.
+// Copyright (c) 2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,19 +35,20 @@ protected:
   CecController();
   CecController(const CecController&) = delete;
   CecController& operator=(const CecController&) = delete;
+  bool initialize();
 
   std::list<CecHandler*> mHandlerList;
   std::list<std::pair<CreateCecHandlerObject, HandlerRank>> mCreatorList;
+  bool mInitlialized = false;
 
   static CecController *mInstance;
 public:
 
   static CecController* getInstance();
 
-  virtual bool initialize();
   virtual ~CecController();
   virtual bool HandleCommand(std::shared_ptr<Command> command);
   virtual bool Register(CreateCecHandlerObject createObject, HandlerRank rank);
-  virtual std::string GetDeviceInfo(std::string destAddress);
+  virtual std::shared_ptr<CecDevice> GetDeviceInfo(std::string destAddress);
 };
 #endif /* _CECHANDLER_H_ */

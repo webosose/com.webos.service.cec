@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 LG Electronics, Inc.
+// Copyright (c) 2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ CecController* CecController::getInstance() {
 }
 
 CecController::CecController() {
+  AppLogDebug()<<" CecController::"<<__func__<<":"<<__LINE__;
 }
 
 CecController::~CecController() {
@@ -35,6 +36,7 @@ CecController::~CecController() {
 }
 
 bool CecController::initialize() {
+  AppLogInfo()<<" CecController::"<<__func__<<":"<<__LINE__;
   CecHandler *ptr = nullptr;
   for (auto it = mCreatorList.begin(); it!=mCreatorList.end(); ++it) {
     ptr = (*it).first();
@@ -45,15 +47,23 @@ bool CecController::initialize() {
 }
 
 bool CecController::HandleCommand(std::shared_ptr<Command> command) {
+  AppLogInfo()<<" CecController::"<<__func__<<":"<<__LINE__;
+
+  if(!mInitlialized) {
+    initialize();
+    mInitlialized = true;
+  }
+
   for (auto it = mHandlerList.begin(); it!=mHandlerList.end(); ++it) {
+    AppLogDebug()<<"CecController::"<<__func__<<":"<<__LINE__<<" Calling registered handlers";
     if((*it)->HandleCommand(command) == true)
       return true;
   }
   return false;
 }
 
-bool CecController::Register(CreateCecHandlerObject createObject, HandlerRank rank) {  
-
+bool CecController::Register(CreateCecHandlerObject createObject, HandlerRank rank) {
+  AppLogInfo()<<" CecController::"<<__func__<<":"<<__LINE__<<" Rank:"<<rank;
   std::pair<CreateCecHandlerObject,HandlerRank> creator;
 
   creator.first = createObject;
@@ -62,11 +72,13 @@ bool CecController::Register(CreateCecHandlerObject createObject, HandlerRank ra
     auto it = mCreatorList.begin();
     for (; it!=mCreatorList.end(); ++it) {
       if((*it).second > rank) {
+        AppLogDebug()<<" CecController::"<<__func__<<":"<<__LINE__<<" Inserting Handler";
         mCreatorList.insert(it, creator);
         break;
       }
     }
     if (it == mCreatorList.end()) {
+      AppLogDebug()<<" CecController::"<<__func__<<":"<<__LINE__<<" Inserting Handler";
       mCreatorList.push_back(creator);
     }
     return true;
@@ -75,7 +87,7 @@ bool CecController::Register(CreateCecHandlerObject createObject, HandlerRank ra
   return true;
 }
 
-std::string CecController::GetDeviceInfo(std::string destAddress) {
+std::shared_ptr<CecDevice> CecController::GetDeviceInfo(std::string destAddress) {
   CecHandler *default_handler = mHandlerList.back();
   return default_handler->GetDeviceInfo(destAddress);
 }

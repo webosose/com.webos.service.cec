@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 LG Electronics, Inc.
+// Copyright (c) 2022 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ LGTVCecHandler::~LGTVCecHandler() {
 }
 
 bool LGTVCecHandler::HandleCommand(std::shared_ptr<Command> command) {
+  AppLogInfo()<<" LGTVCecHandler::"<<__func__<<":"<<__LINE__;
 
   if (command->getType() != SEND_COMMAND) {
     return false;
@@ -35,11 +36,11 @@ bool LGTVCecHandler::HandleCommand(std::shared_ptr<Command> command) {
 
   std::shared_ptr<SendCommandReqData> commandData(reqData, static_cast<SendCommandReqData*>(reqData.get()));
 
-  // TODO: Get vendor ID Probably we can use controller to get the vendor id
-  std::string vendor_id = "";
-  vendor_id = CecController::getInstance()->GetDeviceInfo(commandData->destAddress);
-  if (commandData->destAddress == "0.0.0.0" && vendor_id == "LG") {
-    // Modify the command data
+  std::shared_ptr<CecDevice> device = CecController::getInstance()->GetDeviceInfo(commandData->destAddress);
+  if (device != nullptr) {
+    if (device->name == "TV" && device->vendor == "LG") {
+      //TODO: Modify the command as per LG requirement
+    }
   }
   return false;
 }
