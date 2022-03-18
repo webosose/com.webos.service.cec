@@ -16,7 +16,7 @@
 
 #include <map>
 
-#include "CeCErrors.h"
+#include "../include/CecErrors.h"
 
 static std::map<CecErrorCode, std::string> cecErrorTextTable = {
     {CEC_ERR_BAD_JSON, "Invalid JSON format"},

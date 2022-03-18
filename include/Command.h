@@ -16,6 +16,12 @@
 
 #pragma once
 
+#include <list>
+#include <vector>
+#include <memory>
+
+#include "Logger.h"
+
 const std::string DEFAULT_CEC_ADAPTER = "cec0";
 const int DEFAULT_REPLY_TIMEOUT_MS = 1000;
 
@@ -80,20 +86,69 @@ struct ListAdaptersResData: public CommandResData {
     std::list<std::string> cecAdapters;
 };
 
-struct CecDevice {
-    std::string name;
-    std::string address;
-    std::string activeSource;
-    std::string vendor;
-    std::string osd;
-    std::string cecVersion;
-    std::string powerStatus;
-    std::string language;
+class CecDevice {
+    std::string m_name;
+    std::string m_address;
+    std::string m_activeSource;
+    std::string m_vendor;
+    std::string m_osd;
+    std::string m_cecVersion;
+    std::string m_powerStatus;
+    std::string m_language;
 
-    CecDevice(std::string nam, std::string addr, std::string activeSrc, std::string vdr, std::string osdStr,
+public:
+    CecDevice(std::string name, std::string addr, std::string activeSrc, std::string vdr, std::string osd,
             std::string cecVer, std::string powerStat, std::string lang) :
-            name(nam), address(addr), activeSource(activeSrc), vendor(vdr), osd(osdStr), cecVersion(cecVer), powerStatus(
-                    powerStat), language(lang) {
+            m_name(name), m_address(addr), m_activeSource(activeSrc), m_vendor(vdr), m_osd(osd), m_cecVersion(cecVer), m_powerStatus(
+                    powerStat), m_language(lang) {
+    }
+
+    bool hasLogicalAddress() {
+        return m_address.find_first_not_of("0123456789") == std::string::npos;
+    }
+
+    const std::string& getName() const {
+        return m_name;
+    }
+
+    const std::string& getAddress() const {
+        return m_address;
+    }
+
+    const std::string& getActiveSource() const {
+        return m_activeSource;
+    }
+
+    const std::string& getVendor() const {
+        return m_vendor;
+    }
+
+    const std::string& getOsd() const {
+        return m_osd;
+    }
+
+    const std::string& getCecVersion() const {
+        return m_cecVersion;
+    }
+
+    const std::string& getPowerStatus() const {
+        return m_powerStatus;
+    }
+
+    const std::string& getLanguage() const {
+        return m_language;
+    }
+
+    void printDeviceInfo() const {
+        AppLogDebug() <<"CecDevice Info:\n";
+        AppLogDebug() <<"Name: " << m_name << "\n";
+        AppLogDebug() <<"Address: " << m_address << "\n";
+        AppLogDebug() <<"ActiveSource: " << m_activeSource << "\n";
+        AppLogDebug() <<"Vendor: " << m_vendor << "\n";
+        AppLogDebug() <<"OSD: " << m_osd << "\n";
+        AppLogDebug() <<"Cec Version: " << m_cecVersion << "\n";
+        AppLogDebug() <<"Power Status: " << m_powerStatus << "\n";
+        AppLogDebug() <<"Language: " << m_language << "\n";
     }
 };
 

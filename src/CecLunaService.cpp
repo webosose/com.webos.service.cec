@@ -16,47 +16,39 @@
 
 #include <pbnjson.hpp>
 
-#include "CeCErrors.h"
-#include "ls2utils.h"
-#include "CECLunaService.h"
+#include "CecErrors.h"
+#include "Ls2Utils.h"
 #include "CecController.h"
+#include "CecLunaService.h"
 
 const std::string SERVICE_NAME = "com.webos.service.cec";
 
-CECLunaService::CECLunaService() :
-        main_loop_ptr(g_main_loop_new(nullptr, false), g_main_loop_unref), LS::Handle(SERVICE_NAME.c_str()) {
+CecLunaService::CecLunaService() :
+        LS::Handle(SERVICE_NAME.c_str()) {
     registerMethods();
 }
 
-CECLunaService::~CECLunaService() {
+CecLunaService::~CecLunaService() {
 
 }
 
-void CECLunaService::registerMethods() {
-
+void CecLunaService::registerMethods() {
+    AppLogDebug() <<__func__<<"\n";
     //Register Luna Methods for CeC service
-    LS_CREATE_CATEGORY_BEGIN(CECLunaService, base) LS_CATEGORY_CLASS_METHOD(CECLunaService, listAdapters)
-    LS_CATEGORY_CLASS_METHOD(CECLunaService, scan)
-    LS_CATEGORY_CLASS_METHOD(CECLunaService, sendCommand)
-    LS_CATEGORY_CLASS_METHOD(CECLunaService, getConfig)
-    LS_CATEGORY_CLASS_METHOD(CECLunaService, setConfig)
+    LS_CREATE_CATEGORY_BEGIN(CecLunaService, base) LS_CATEGORY_CLASS_METHOD(CecLunaService, listAdapters)
+    LS_CATEGORY_CLASS_METHOD(CecLunaService, scan)
+    LS_CATEGORY_CLASS_METHOD(CecLunaService, sendCommand)
+    LS_CATEGORY_CLASS_METHOD(CecLunaService, getConfig)
+    LS_CATEGORY_CLASS_METHOD(CecLunaService, setConfig)
     LS_CREATE_CATEGORY_END
 
     registerCategory("/", LS_CATEGORY_TABLE_NAME(base), NULL, NULL);
     setCategoryData("/", this);
 }
 
-void CECLunaService::run() {
-    attachToLoop(main_loop_ptr.get());
-    g_main_loop_run(main_loop_ptr.get());
-}
+bool CecLunaService::listAdapters(LSMessage &message) {
 
-void CECLunaService::stop() {
-    g_main_loop_quit(main_loop_ptr.get());
-}
-
-bool CECLunaService::listAdapters(LSMessage &message) {
-
+    AppLogDebug() <<__func__<<"\n";
     LS::Message request(&message);
     pbnjson::JValue requestObj;
     const std::string schema = SCHEMA_EMPTY;
@@ -79,16 +71,19 @@ bool CECLunaService::listAdapters(LSMessage &message) {
     }
 }
 
-void CECLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
+void CecLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
 
+    AppLogDebug() <<__func__<<"\n";
     std::shared_ptr<Command> command = std::make_shared < Command
-            > (CommandType::LIST_ADAPTERS, std::bind(&CECLunaService::callback, this, m_clientId,
+            > (CommandType::LIST_ADAPTERS, std::bind(&CecLunaService::callback, this, m_clientId,
                     CommandType::LIST_ADAPTERS, std::placeholders::_1));
     //Send command to CEC Controller
     CecController::getInstance()->HandleCommand(command);
 }
 
-bool CECLunaService::scan(LSMessage &message) {
+bool CecLunaService::scan(LSMessage &message) {
+
+    AppLogDebug() <<__func__<<"\n";
     LS::Message request(&message);
     pbnjson::JValue requestObj;
     const std::string schema = SCHEMA_1(PROP(adapter, string));
@@ -112,10 +107,11 @@ bool CECLunaService::scan(LSMessage &message) {
     }
 }
 
-void CECLunaService::handleScan(pbnjson::JValue &requestObj) {
+void CecLunaService::handleScan(pbnjson::JValue &requestObj) {
 
+    AppLogDebug() <<__func__<<"\n";
     std::shared_ptr<Command> command = std::make_shared < Command
-            > (CommandType::SCAN, std::bind(&CECLunaService::callback, this, m_clientId, CommandType::SCAN,
+            > (CommandType::SCAN, std::bind(&CecLunaService::callback, this, m_clientId, CommandType::SCAN,
                     std::placeholders::_1));
 
     std::shared_ptr<ScanReqData> data = std::make_shared<ScanReqData>();
@@ -128,7 +124,9 @@ void CECLunaService::handleScan(pbnjson::JValue &requestObj) {
     CecController::getInstance()->HandleCommand(command);
 }
 
-bool CECLunaService::sendCommand(LSMessage &message) {
+bool CecLunaService::sendCommand(LSMessage &message) {
+
+    AppLogDebug() <<__func__<<"\n";
     LS::Message request(&message);
     pbnjson::JValue requestObj;
     const std::string schema =
@@ -167,10 +165,11 @@ bool CECLunaService::sendCommand(LSMessage &message) {
     }
 }
 
-void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
+void CecLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
 
+    AppLogDebug() <<__func__<<"\n";
     std::shared_ptr<Command> command = std::make_shared < Command
-            > (CommandType::SEND_COMMAND, std::bind(&CECLunaService::callback, this, m_clientId,
+            > (CommandType::SEND_COMMAND, std::bind(&CecLunaService::callback, this, m_clientId,
                     CommandType::SEND_COMMAND, std::placeholders::_1));
 
     std::shared_ptr<SendCommandReqData> data = std::make_shared<SendCommandReqData>();
@@ -207,7 +206,9 @@ void CECLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
     CecController::getInstance()->HandleCommand(command);
 }
 
-bool CECLunaService::getConfig(LSMessage &message) {
+bool CecLunaService::getConfig(LSMessage &message) {
+
+    AppLogDebug() <<__func__<<"\n";
     LS::Message request(&message);
     pbnjson::JValue requestObj;
     const std::string schema = STRICT_SCHEMA(PROPS_2(PROP(key, string), PROP(adapter, string)) REQUIRED_1(key));
@@ -231,10 +232,11 @@ bool CECLunaService::getConfig(LSMessage &message) {
     }
 }
 
-void CECLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
+void CecLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
 
+    AppLogDebug() <<__func__<<"\n";
     std::shared_ptr<Command> command = std::make_shared < Command
-            > (CommandType::GET_CONFIG, std::bind(&CECLunaService::callback, this, m_clientId, CommandType::GET_CONFIG,
+            > (CommandType::GET_CONFIG, std::bind(&CecLunaService::callback, this, m_clientId, CommandType::GET_CONFIG,
                     std::placeholders::_1));
 
     std::shared_ptr<GetConfigReqData> data = std::make_shared<GetConfigReqData>();
@@ -247,7 +249,9 @@ void CECLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
     CecController::getInstance()->HandleCommand(command);
 }
 
-bool CECLunaService::setConfig(LSMessage &message) {
+bool CecLunaService::setConfig(LSMessage &message) {
+
+    AppLogDebug() <<__func__<<"\n";
     LS::Message request(&message);
     pbnjson::JValue requestObj;
     const std::string schema = STRICT_SCHEMA(
@@ -274,10 +278,11 @@ bool CECLunaService::setConfig(LSMessage &message) {
     }
 }
 
-void CECLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
+void CecLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
 
+    AppLogDebug() <<__func__<<"\n";
     std::shared_ptr<Command> command = std::make_shared < Command
-            > (CommandType::SET_CONFIG, std::bind(&CECLunaService::callback, this, m_clientId, CommandType::SET_CONFIG,
+            > (CommandType::SET_CONFIG, std::bind(&CecLunaService::callback, this, m_clientId, CommandType::SET_CONFIG,
                     std::placeholders::_1));
 
     std::shared_ptr<SetConfigReqData> data = std::make_shared<SetConfigReqData>();
@@ -292,9 +297,11 @@ void CECLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
     CecController::getInstance()->HandleCommand(command);
 }
 
-void CECLunaService::callback(void *ctx, uint16_t clientId, enum CommandType type,
+void CecLunaService::callback(void *ctx, uint16_t clientId, enum CommandType type,
         std::shared_ptr<CommandResData> respData) {
-    CECLunaService *pThis = static_cast<CECLunaService*>(ctx);
+
+    AppLogDebug() <<__func__<<"\n";
+    CecLunaService *pThis = static_cast<CecLunaService*>(ctx);
 
     if (!pThis)
         return;
@@ -319,10 +326,13 @@ void CECLunaService::callback(void *ctx, uint16_t clientId, enum CommandType typ
     }
 }
 
-void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum CommandType type,
+void CecLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum CommandType type,
         std::shared_ptr<CommandResData> respData) {
+
+    AppLogDebug() <<__func__<<"\n";
     switch (type) {
         case CommandType::LIST_ADAPTERS: {
+            AppLogDebug() <<__func__<<" parse listadapters response\n";
             std::shared_ptr<ListAdaptersResData> data = std::static_pointer_cast < ListAdaptersResData > (respData);
             if (!data)
                 return;
@@ -335,6 +345,7 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
             break;
         }
         case CommandType::SCAN: {
+            AppLogDebug() <<__func__<<" parse scan response\n";
             std::shared_ptr<ScanResData> data = std::static_pointer_cast < ScanResData > (respData);
 
             if (!data)
@@ -343,20 +354,21 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
             pbnjson::JValue devicesArray = pbnjson::Array();
             for (auto const &cecDevice : data->devices) {
                 pbnjson::JValue device = pbnjson::Object();
-                device.put("name", cecDevice.name);
-                device.put("address", cecDevice.address);
-                device.put("activeSource", cecDevice.activeSource);
-                device.put("vendor", cecDevice.vendor);
-                device.put("osd", cecDevice.osd);
-                device.put("cecVersion", cecDevice.cecVersion);
-                device.put("powerStatus", cecDevice.powerStatus);
-                device.put("language", cecDevice.language);
+                device.put("name", cecDevice.getName());
+                device.put("address", cecDevice.getAddress());
+                device.put("activeSource", cecDevice.getActiveSource());
+                device.put("vendor", cecDevice.getVendor());
+                device.put("osd", cecDevice.getOsd());
+                device.put("cecVersion", cecDevice.getCecVersion());
+                device.put("powerStatus", cecDevice.getPowerStatus());
+                device.put("language", cecDevice.getLanguage());
                 devicesArray.append(device);
             }
             responseObj.put("devices", devicesArray);
             break;
         }
         case CommandType::SEND_COMMAND: {
+            AppLogDebug() <<__func__<<" parse send command response\n";
             std::shared_ptr<SendCommandResData> data = std::static_pointer_cast < SendCommandResData > (respData);
 
             if (data && data->payload.size()) {
@@ -371,10 +383,12 @@ void CECLunaService::parseResponseObject(pbnjson::JValue &responseObj, enum Comm
             break;
         }
         case CommandType::SET_CONFIG: {
+            AppLogDebug() <<__func__<<" parse setconfig response\n";
             //Nothing to handle
             break;
         }
         case CommandType::GET_CONFIG: {
+            AppLogDebug() <<__func__<<" parse getconfig response\n";
             std::shared_ptr<GetConfigResData> data = std::static_pointer_cast < GetConfigResData > (respData);
 
             if (!data)

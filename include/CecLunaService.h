@@ -16,39 +16,27 @@
 
 #pragma once
 
-#include <glib.h>
 #include <memory>
-#include <unordered_map>
 #include <list>
 #include <map>
+#include <glib.h>
 
 #include <luna-service2/lunaservice.hpp>
 
 #include "Logger.h"
 #include "Command.h"
 
-class CECLunaService: public LS::Handle {
+class CecLunaService: public LS::Handle {
 public:
-    CECLunaService();
-
-    virtual ~CECLunaService();
-
-    void run();
+    CecLunaService();
+    virtual ~CecLunaService();
 
     void registerMethods();
-
-    void stop();
-
     bool listAdapters(LSMessage &message);
-
     bool scan(LSMessage &message);
-
     bool sendCommand(LSMessage &message);
-
     bool getConfig(LSMessage &message);
-
     bool setConfig(LSMessage &message);
-
     static void callback(void *ctx, uint16_t clientId, enum CommandType type, std::shared_ptr<CommandResData> respData);
 private:
 
@@ -59,9 +47,6 @@ private:
     void handleSetConfig(pbnjson::JValue &requestObj);
     void parseResponseObject(pbnjson::JValue &responseObj, enum CommandType type,
             std::shared_ptr<CommandResData> respData);
-    using MainLoopT = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>;
-    MainLoopT main_loop_ptr;
-    std::list<LS::Call> callObjects;
     std::map<uint16_t, LSMessage*> m_clients;
     uint16_t m_clientId = 0;
 };

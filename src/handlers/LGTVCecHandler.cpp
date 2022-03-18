@@ -38,7 +38,7 @@ bool LGTVCecHandler::HandleCommand(std::shared_ptr<Command> command) {
 
   std::shared_ptr<CecDevice> device = CecController::getInstance()->GetDeviceInfo(commandData->destAddress);
   if (device != nullptr) {
-    if (device->name == "TV" && device->vendor == "LG") {
+    if (device->getName() == "TV" && device->getVendor() == "LG") {
       //TODO: Modify the command as per LG requirement
     }
   }

@@ -21,7 +21,7 @@
 #include <pbnjson.hpp>
 #include <luna-service2/lunaservice.hpp>
 
-#include "CeCErrors.h"
+#include "CecErrors.h"
 
 #define LS_CATEGORY_TABLE_NAME(name) name##_table
 

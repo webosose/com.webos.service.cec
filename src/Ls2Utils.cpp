@@ -14,8 +14,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../include/Ls2Utils.h"
+
 #include "Logger.h"
-#include "ls2utils.h"
 
 void LSUtils::postToClient(LS::Message &message, pbnjson::JValue &object)
 {

@@ -316,7 +316,7 @@ void DefaultCecHandler::HandleScanCb(std::vector<std::string> resp) {
 
     std::unique_lock < std::mutex > lock(mMutex);
     for (auto itr=mDeviceInfoList.begin(); itr!=mDeviceInfoList.end(); ++itr) {
-      if ((*itr).address == address) {
+      if ((*itr).getAddress() == address) {
         mDeviceInfoList.erase(itr);
         break;
       }
@@ -509,7 +509,7 @@ std::shared_ptr<CecDevice> DefaultCecHandler::GetDeviceInfo(std::string destAddr
   AppLogInfo()<<" DefaultCecHandler::"<<__func__<<":"<<__LINE__;
   std::unique_lock < std::mutex > lock(mMutex);
   for (auto it=mDeviceInfoList.begin(); it!=mDeviceInfoList.end(); ++it) {
-    if ((*it).address == destAddress) {
+    if ((*it).getAddress() == destAddress) {
       std::shared_ptr<CecDevice> retVal = std::make_shared<CecDevice>(*it);
       return retVal;
     }
