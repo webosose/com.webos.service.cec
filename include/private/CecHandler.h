@@ -32,6 +32,15 @@ enum HandlerRank {
   DEFAULT_RANK
 };
 
+enum HandlerErrorCode {
+  HANDLER_ERROR_OK,
+  HANDLER_ERROR_INVALID_PARAMTERS,
+  HANDLER_ERROR_INVALID_COMMAND,
+  HANDLER_ERROR_INVALID_ADAPTER,
+  HANDLER_ERROR_INVALID_DESTINATION,
+  HANDLER_ERROR_UNKNOWN
+};
+
 class CecHandler {
 public:
 
@@ -41,5 +50,6 @@ public:
   virtual bool HandleCommand(std::shared_ptr<Command> command) = 0;
   virtual HandlerRank GetRank() = 0;
   virtual std::shared_ptr<CecDevice> GetDeviceInfo(std::string destAddress) { return std::shared_ptr<CecDevice>(); }
+  virtual HandlerErrorCode ValidateCommand(std::shared_ptr<Command> command) { return HANDLER_ERROR_OK; }
 };
 #endif /* _CECHANDLER_H_ */

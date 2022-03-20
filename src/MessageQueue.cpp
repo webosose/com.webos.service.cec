@@ -1,6 +1,5 @@
 #include "MessageQueue.h"
 
-//Need to check
 static MessageQueue *objPtr;
 CommandType mType;
 
@@ -49,11 +48,11 @@ void MessageQueue::setCallback(MsgCallback cb)
 
 void MessageQueue::nyxCallback(nyx_cec_response_t *response)
 {
-    AppLogInfo() <<__func__ << "Received :\n";
+    AppLogDebug() <<__func__ << "Received :\n";
     std::vector<std::string> resp;
     for(int i=0;i<response->size;i++)
     {
-        AppLogInfo() <<response->responses[i]<<"\n";
+        AppLogDebug() <<response->responses[i]<<"\n";
         resp.push_back(response->responses[i]);
     }
     objPtr->mCb(mType,resp);
@@ -66,23 +65,41 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
 
     nyx_error_t error;
     nyx_cec_command_t command;
+    command.size = request->params.size();
     if(request->type == CommandType::SCAN)
         strcpy(command.name,"scan");
     else if(request->type == CommandType::LIST_ADAPTERS)
         strcpy(command.name,"listAdapters");
-    else if(request->params.find("name") != request->params.end())
-        strcpy(command.name,request->params["name"].c_str());
-    //strcpy(command.name,getMessageString(request->type).c_str());
+    else if(request->type == CommandType::SEND_COMMAND)
+        strcpy(command.name,request->params["cmd-name"].c_str());
+    AppLogDebug() <<"COMMAND NAME : [ "<<command.name<<" ]"<<"\n";
     int i =0;
-    for(auto arg : request->params)
-    {
-        strcpy(command.params[i].name,arg.first.c_str());
-        strcpy(command.params[i].value,arg.second.c_str());
+    for(auto it : request->params) {
+        strcpy(command.params[i].name,it.first.c_str());
+        if (!it.second.empty())
+          strcpy(command.params[i].value,it.second.c_str());
+        else
+          strcpy(command.params[i].value," ");
+        AppLogDebug() <<"Name : [ "<<command.params[i].name<<" ]" <<"Value : ["<<command.params[i].value<<" ]"<<"\n";
         i++;
     }
     error = nyx_cec_send_command(mDevice, &command);
-    if(error != NYX_ERROR_NONE)
+    if(error == NYX_ERROR_NOT_IMPLEMENTED)
+    {
+        AppLogDebug() <<__func__<<": NYX_ERROR_NOT_IMPLEMENTED\n";
+        std::vector<std::string> resp;
+        std::string reply = "response: success";
+        resp.push_back(reply);
+        mCb(mType,resp);
+    }
+    else if(error != NYX_ERROR_NONE)
+    {
         AppLogError() <<__func__<<": Failed with :"<<error<<"\n";
+        std::vector<std::string> resp;
+        std::string reply = "response: failed";
+        resp.push_back(reply);
+        mCb(mType,resp);
+    }
 }
 
 void MessageQueue::getConfig(std::shared_ptr<MessageData> request)
@@ -91,25 +108,35 @@ void MessageQueue::getConfig(std::shared_ptr<MessageData> request)
     mType = request->type;
 
     nyx_error_t error;
-    char *configName = new char;
-    char *value = new char; //need to check
-    for (auto it : request->params)
-    {
-        if(it.second.empty())
+    char *configName = nullptr;
+    char *value = new char[100];
+
+    for(auto it : request->params) {
+        AppLogDebug() <<__func__<<" Updating param"<<"\n";
+        if(it.first != "adapter") {
+            configName = new char[it.first.size() + 1];
             strcpy(configName,it.first.c_str());
+        }
     }
+
     error = nyx_cec_get_config(mDevice, configName, &value);
     if(error != NYX_ERROR_NONE)
-        AppLogError() <<__func__<<": Failed with :"<<error<<"\n";
-    else
     {
-        AppLogInfo() <<__func__<<": Value :"<<value<<"\n";
+        AppLogError() <<__func__<<": Failed with :"<<error<<"\n";
+        std::vector<std::string> resp;
+        std::string reply = "response: failed";
+        resp.push_back(reply);
+        mCb(mType,resp);
+    }
+    else {
+        AppLogDebug() <<__func__<<": Value :"<<value<<"\n";
         std::vector<std::string> resp;
         resp.push_back(value);
         mCb(mType,resp);
     }
-    delete configName;
-    delete value;
+    if (configName != nullptr)
+      delete[] configName;
+    delete[] value;
 }
 
 void MessageQueue::setConfig(std::shared_ptr<MessageData> request)
@@ -118,28 +145,43 @@ void MessageQueue::setConfig(std::shared_ptr<MessageData> request)
     mType = request->type;
 
     nyx_error_t error;
-    char *type = new char;
-    char *value = new char;
-     for (auto it : request->params)
-    {
-        if(it.first != "adapter")
-        {
+    char *type = nullptr;
+    char *value = nullptr;
+    for (auto it : request->params) {
+        if(it.first != "adapter") {
+            type = new char[it.first.size()+1];
             strcpy(type,it.first.c_str());
+            value = new char[it.second.size()+1];
             strcpy(value,it.second.c_str());
         }
     }
     error = nyx_cec_set_config(mDevice, type, value);
-    if(error != NYX_ERROR_NONE)
+    if((error == NYX_ERROR_NOT_IMPLEMENTED) || (error == NYX_ERROR_NONE))
+    {
+        AppLogDebug() <<__func__<<": NYX_ERROR_NOT_IMPLEMENTED s\n";
+        std::vector<std::string> resp;
+        std::string reply = "response: success";
+        resp.push_back(reply);
+        mCb(mType,resp);
+    }
+    else  if (NYX_ERROR_NONE != error)
+    {
         AppLogError() <<__func__<<": Failed with :"<<error<<"\n";
-    else
-        AppLogInfo() <<__func__<<": Success"<<"\n";
-    delete type;
-    delete value;
+        std::vector<std::string> resp;
+        std::string reply = "response: failed";
+        resp.push_back(reply);
+        mCb(mType,resp);
+    }
+
+    if (type != nullptr)
+      delete[] type;
+    if (value != nullptr)
+      delete[] value;
 }
 
 bool MessageQueue::handleMessage(std::shared_ptr<MessageData> request)
 {
-    AppLogInfo() <<__func__ << "\n";
+    AppLogDebug() <<__func__ << "\n";
     switch(request->type)
     {
         case CommandType::LIST_ADAPTERS:

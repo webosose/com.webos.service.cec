@@ -37,12 +37,16 @@ CecController::~CecController() {
 
 bool CecController::initialize() {
   AppLogInfo()<<" CecController::"<<__func__<<":"<<__LINE__;
+  if (mInitlialized)
+    return true;
+
   CecHandler *ptr = nullptr;
   for (auto it = mCreatorList.begin(); it!=mCreatorList.end(); ++it) {
     ptr = (*it).first();
     mHandlerList.push_back(ptr);
     ptr = nullptr;
   }
+  mInitlialized = true;
   return true;
 }
 

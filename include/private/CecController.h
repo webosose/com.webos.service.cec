@@ -35,7 +35,6 @@ protected:
   CecController();
   CecController(const CecController&) = delete;
   CecController& operator=(const CecController&) = delete;
-  bool initialize();
 
   std::list<CecHandler*> mHandlerList;
   std::list<std::pair<CreateCecHandlerObject, HandlerRank>> mCreatorList;
@@ -47,6 +46,7 @@ public:
   static CecController* getInstance();
 
   virtual ~CecController();
+  bool initialize();
   virtual bool HandleCommand(std::shared_ptr<Command> command);
   virtual bool Register(CreateCecHandlerObject createObject, HandlerRank rank);
   virtual std::shared_ptr<CecDevice> GetDeviceInfo(std::string destAddress);

@@ -26,6 +26,7 @@ const std::string SERVICE_NAME = "com.webos.service.cec";
 CecLunaService::CecLunaService() :
         LS::Handle(SERVICE_NAME.c_str()) {
     registerMethods();
+    CecController::getInstance()->initialize();
 }
 
 CecLunaService::~CecLunaService() {
@@ -51,7 +52,7 @@ bool CecLunaService::listAdapters(LSMessage &message) {
     AppLogDebug() <<__func__<<"\n";
     LS::Message request(&message);
     pbnjson::JValue requestObj;
-    const std::string schema = SCHEMA_EMPTY;
+    const std::string schema = SCHEMA_ANY;
 
     int parseError = 0;
     if (!LSUtils::parsePayload(request.getPayload(), requestObj, schema, &parseError)) {

@@ -31,6 +31,7 @@ class DefaultCecHandler : public CecHandler
     static std::list<std::shared_ptr<Command>> mCmdList;
     static std::mutex mMutex;
     static std::list<CecDevice> mDeviceInfoList;
+    static std::list<std::string> mAdaptersList;
     HandlerRank mRank = DEFAULT_RANK;
 
     DefaultCecHandler();
@@ -46,6 +47,14 @@ class DefaultCecHandler : public CecHandler
     bool HandleListAdapters(std::shared_ptr<Command> command);
     bool HandleGetConfig(std::shared_ptr<Command> command);
     bool HandleSetConfig(std::shared_ptr<Command> command);
+
+    HandlerErrorCode ValidateAdapter(std::string adapter);
+    HandlerErrorCode ValidateAddress(std::string address);
+    HandlerErrorCode ValidateSendCommand(std::shared_ptr<Command> command);
+    HandlerErrorCode ValidateListAdapters(std::shared_ptr<Command> command);
+    HandlerErrorCode ValidateScan(std::shared_ptr<Command> command);
+    HandlerErrorCode ValidateGetConfig(std::shared_ptr<Command> command);
+    HandlerErrorCode ValidateSetConfig(std::shared_ptr<Command> command);
 
     static void HandleSystemInfoResp(std::shared_ptr<SendCommandReqData> commandData, std::vector<std::string> resp, std::shared_ptr<SendCommandResData> respCmd);
     static std::string GetValue(std::string str);
@@ -73,6 +82,7 @@ class DefaultCecHandler : public CecHandler
     bool HandleCommand(std::shared_ptr<Command> command);
     std::shared_ptr<CecDevice> GetDeviceInfo(std::string destAddress);
     HandlerRank GetRank() { return mRank; }
+    HandlerErrorCode ValidateCommand(std::shared_ptr<Command> command);
 };
 
 #endif // _DEFAULTCECHANDLER_H
