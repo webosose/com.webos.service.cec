@@ -148,10 +148,6 @@ bool CecLunaService::sendCommand(LSMessage &message) {
         AppLogError() << "Parser error: CecLunaService::sendCommand code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
-        else if (!requestObj.hasKey("destAddress"))
-            LSUtils::respondWithError(request, CEC_ERR_DESTADDR_PARAM_MISSING);
-        else if (!requestObj.hasKey("command"))
-            LSUtils::respondWithError(request, CEC_ERR_COMMAND_PARAM_MISSING);
         else
             LSUtils::respondWithError(request, CEC_ERR_SCHEMA_VALIDATION_FAILED);
         return true;
@@ -192,7 +188,7 @@ void CecLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
         for (auto i = 0; i < argsSize; ++i) {
             auto argObj = argsObj[i];
             CecCommandArg commandArg;
-            commandArg.arg = argObj["name"].asString();
+            commandArg.arg = argObj["arg"].asString();
             if (argObj.hasKey("value")) {
                 commandArg.value = argObj["value"].asString();
             }
@@ -218,8 +214,6 @@ bool CecLunaService::getConfig(LSMessage &message) {
         AppLogError() << "Parser error: CecLunaService::getConfig code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
-        else if (!requestObj.hasKey("key"))
-            LSUtils::respondWithError(request, CEC_ERR_KEY_PARAM_MISSING);
         else
             LSUtils::respondWithError(request, CEC_ERR_SCHEMA_VALIDATION_FAILED);
         return true;
@@ -262,10 +256,6 @@ bool CecLunaService::setConfig(LSMessage &message) {
         AppLogError() << "Parser error: CecLunaService::setConfig code: " << parseError << "\n";
         if (JSON_PARSE_SCHEMA_ERROR != parseError)
             LSUtils::respondWithError(request, CEC_ERR_BAD_JSON);
-        else if (!requestObj.hasKey("key"))
-            LSUtils::respondWithError(request, CEC_ERR_KEY_PARAM_MISSING);
-        else if (!requestObj.hasKey("value"))
-            LSUtils::respondWithError(request, CEC_ERR_VALUE_PARAM_MISSING);
         else
             LSUtils::respondWithError(request, CEC_ERR_SCHEMA_VALIDATION_FAILED);
         return true;
