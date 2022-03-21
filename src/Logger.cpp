@@ -17,4 +17,4 @@
 #include <Logger.h>
 #include <PmLog.h>
 
-pmlog::PmLog appLog("webos-cec-service");
+pmlog::PmLog appLog("CEC");
