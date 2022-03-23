@@ -92,11 +92,8 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
     int i =0;
     for(auto it : request->params) {
         strcpy(command.params[i].name,it.first.c_str());
-        if (!it.second.empty())
-          strcpy(command.params[i].value,it.second.c_str());
-        else
-          strcpy(command.params[i].value," ");
-        AppLogDebug() <<"Name : [ "<<command.params[i].name<<" ]" <<"Value : ["<<command.params[i].value<<" ]"<<"\n";
+        strcpy(command.params[i].value,it.second.c_str());
+        AppLogDebug() <<"Name : [ "<<command.params[i].name<<" ]" <<" Value : ["<<command.params[i].value<<" ]"<<"\n";
         i++;
     }
     error = nyx_cec_send_command(mDevice, &command);
