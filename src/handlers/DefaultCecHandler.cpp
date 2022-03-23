@@ -544,6 +544,14 @@ void DefaultCecHandler::HandleGetConfigCb(std::vector<std::string> resp) {
       }
       continue;
     }
+
+    if (configData->key=="deviceType") {
+      if ((*it).find("type") != std::string::npos) {
+        respCmd->value = GetValue(*it);
+        break;
+      }
+      continue;
+    }
   }
   callback(std::static_pointer_cast<CommandResData>(respCmd));
 }
@@ -950,6 +958,8 @@ HandlerErrorCode DefaultCecHandler::ValidateGetConfig(std::shared_ptr<Command> c
   else if (configData->key == "physicalAddress")
     return HANDLER_ERROR_OK;
   else if (configData->key == "logicalAddress")
+    return HANDLER_ERROR_OK;
+  else if (configData->key == "deviceType")
     return HANDLER_ERROR_OK;
   else
     return HANDLER_ERROR_INVALID_PARAMTERS;
