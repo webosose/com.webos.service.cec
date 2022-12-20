@@ -54,8 +54,8 @@ bool CecController::HandleCommand(std::shared_ptr<Command> command) {
   AppLogInfo()<<" CecController::"<<__func__<<":"<<__LINE__;
 
   if(!mInitlialized) {
-    initialize();
-    mInitlialized = true;
+    bool ret = m_InitFut.get();
+    AppLogInfo()<<" HandleCommand:: async call done with return "<<ret<<"\n";
   }
 
   for (auto it = mHandlerList.begin(); it!=mHandlerList.end(); ++it) {
