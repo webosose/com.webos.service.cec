@@ -26,7 +26,10 @@ const std::string SERVICE_NAME = "com.webos.service.cec";
 CecLunaService::CecLunaService() :
         LS::Handle(SERVICE_NAME.c_str()) {
     registerMethods();
-    CecController::getInstance()->initialize();
+    AppLogInfo()<<" CecLunaService:: call async method"<<"\n";
+    CecController::getInstance()->m_InitFut = std::async(std::launch::async, []() {
+        return CecController::getInstance()->initialize();
+        });
 }
 
 CecLunaService::~CecLunaService() {

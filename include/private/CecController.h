@@ -27,6 +27,7 @@
 #include "Command.h"
 #include "MessageQueue.h"
 #include "CecHandler.h"
+#include <future>
 
 typedef CecHandler* (*CreateCecHandlerObject)();
 
@@ -50,5 +51,6 @@ public:
   virtual bool HandleCommand(std::shared_ptr<Command> command);
   virtual bool Register(CreateCecHandlerObject createObject, HandlerRank rank);
   virtual std::shared_ptr<CecDevice> GetDeviceInfo(std::string destAddress);
+  std::future<bool> m_InitFut;
 };
 #endif /* _CECHANDLER_H_ */
