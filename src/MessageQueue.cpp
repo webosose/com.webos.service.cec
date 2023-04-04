@@ -1,4 +1,4 @@
-// Copyright (c) 2022 LG Electronics, Inc.
+// Copyright (c) 2022-2023 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -88,8 +88,11 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
         strcpy(command.name,"listAdapters");
     else if(request->type == CommandType::SEND_COMMAND)
         strcpy(command.name,request->params["cmd-name"].c_str());
-    AppLogDebug() <<"COMMAND NAME : [ "<<command.name<<" ]"<<"\n";
-    int i =0;
+    if(strlen(command.name) != 0)
+    {
+        AppLogDebug() <<"COMMAND NAME : [ "<<command.name<<" ]"<<"\n";
+    }
+    size_t i =0;
     for(auto it : request->params) {
         strcpy(command.params[i].name,it.first.c_str());
         strcpy(command.params[i].value,it.second.c_str());
@@ -127,6 +130,9 @@ void MessageQueue::getConfig(std::shared_ptr<MessageData> request)
     for(auto it : request->params) {
         AppLogDebug() <<__func__<<" Updating param"<<"\n";
         if(it.first != "adapter") {
+            if(configName != nullptr){
+               delete[] configName;
+            }
             configName = new char[it.first.size() + 1];
             strcpy(configName,it.first.c_str());
         }
@@ -162,8 +168,14 @@ void MessageQueue::setConfig(std::shared_ptr<MessageData> request)
     char *value = nullptr;
     for (auto it : request->params) {
         if(it.first != "adapter") {
+            if(type != nullptr){
+               delete[] type;
+            }
             type = new char[it.first.size()+1];
             strcpy(type,it.first.c_str());
+            if(value != nullptr){
+               delete[] value;
+            }
             value = new char[it.second.size()+1];
             strcpy(value,it.second.c_str());
         }
