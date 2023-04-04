@@ -80,7 +80,7 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
     mType = request->type;
 
     nyx_error_t error;
-    nyx_cec_command_t command;
+    nyx_cec_command_t command = {0};
     command.size = request->params.size();
     if(request->type == CommandType::SCAN)
         strcpy(command.name,"scan");
@@ -88,11 +88,8 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
         strcpy(command.name,"listAdapters");
     else if(request->type == CommandType::SEND_COMMAND)
         strcpy(command.name,request->params["cmd-name"].c_str());
-    if(strlen(command.name) != 0)
-    {
-        AppLogDebug() <<"COMMAND NAME : [ "<<command.name<<" ]"<<"\n";
-    }
-    size_t i =0;
+    AppLogDebug() <<"COMMAND NAME : [ "<<command.name<<" ]"<<"\n";
+    size_t i = 0;
     for(auto it : request->params) {
         strcpy(command.params[i].name,it.first.c_str());
         strcpy(command.params[i].value,it.second.c_str());
