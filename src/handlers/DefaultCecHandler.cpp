@@ -1,4 +1,4 @@
-// Copyright (c) 2022 LG Electronics, Inc.
+// Copyright (c) 2022-2024 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,9 @@ DefaultCecHandler::DefaultCecHandler() :
 
   std::shared_ptr<Command> listAdapterCommand = std::make_shared<Command>(CommandType::LIST_ADAPTERS,
                                                                           [](std::shared_ptr<CommandResData> resp) -> void {});
-  std::unique_lock < std::mutex > lock(mMutex);
+
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   mCmdList.push_back(listAdapterCommand);
   lock.unlock();
 
@@ -150,7 +152,8 @@ void DefaultCecHandler::HandleSendCommandCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"SEND_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex);
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   std::shared_ptr<Command> command = mCmdList.front();
   if (command->getType() != SEND_COMMAND)
     return;
@@ -320,7 +323,8 @@ void DefaultCecHandler::HandleScanCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"SCAN_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex);
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   std::shared_ptr<Command> command = mCmdList.front();
   if (command->getType() != SCAN)
     return;
@@ -400,7 +404,8 @@ void DefaultCecHandler::HandleScanCb(std::vector<std::string> resp) {
 
     respCmd->devices.push_back(dev);
 
-    std::unique_lock < std::mutex > lock(mMutex);
+    std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+    lock.lock();
     for (auto itr=mDeviceInfoList.begin(); itr!=mDeviceInfoList.end(); ++itr) {
       if ((*itr).getAddress() == address) {
         mDeviceInfoList.erase(itr);
@@ -420,7 +425,8 @@ void DefaultCecHandler::HandleListAdaptersCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"LISTADAPTERS_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex);
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   std::shared_ptr<Command> command = mCmdList.front();
   if (command->getType() != LIST_ADAPTERS)
     return;
@@ -468,7 +474,8 @@ void DefaultCecHandler::HandleGetConfigCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"GETCONFIG_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex);
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   std::shared_ptr<Command> command = mCmdList.front();
   if (command->getType() != GET_CONFIG)
     return;
@@ -562,7 +569,8 @@ void DefaultCecHandler::HandleSetConfigCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"SETCONFIG_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex);
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   std::shared_ptr<Command> command = mCmdList.front();
   if (command->getType() != SET_CONFIG)
     return;
@@ -653,9 +661,11 @@ bool DefaultCecHandler::HandleCommand(std::shared_ptr<Command> command) {
     return true;
   }
 
-  std::unique_lock < std::mutex > lock(mMutex);
+  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
+  lock.lock();
   mCmdList.push_back(command);
   lock.unlock();
+
   switch(command->getType()) {
     case SEND_COMMAND:
       return HandleSendCommand(command);
