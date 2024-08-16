@@ -1,4 +1,4 @@
-// Copyright (c) 2022 LG Electronics, Inc.
+// Copyright (c) 2022-2024 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,8 +99,8 @@ class CecDevice {
 public:
     CecDevice(std::string name, std::string addr, std::string activeSrc, std::string vdr, std::string osd,
             std::string cecVer, std::string powerStat, std::string lang) :
-            m_name(name), m_address(addr), m_activeSource(activeSrc), m_vendor(vdr), m_osd(osd), m_cecVersion(cecVer), m_powerStatus(
-                    powerStat), m_language(lang) {
+            m_name(std::move(name)), m_address(std::move(addr)), m_activeSource(std::move(activeSrc)), m_vendor(std::move(vdr)), m_osd(std::move(osd)), m_cecVersion(std::move(cecVer)), m_powerStatus(
+                    std::move(powerStat)), m_language(std::move(lang)) {
     }
 
     bool hasLogicalAddress() {
@@ -175,12 +175,12 @@ typedef std::function<void(std::shared_ptr<CommandResData>)> CommandCallback;
 class Command {
 public:
     Command(enum CommandType type, CommandCallback callback) :
-            m_commandType(type), m_callback(callback) {
+            m_commandType(type), m_callback(std::move(callback)) {
     }
     virtual ~Command() {
     }
     void setData(std::shared_ptr<CommandReqData> data) {
-        m_data = data;
+        m_data = std::move(data);
     }
     std::shared_ptr<CommandReqData> getData() {
         return m_data;

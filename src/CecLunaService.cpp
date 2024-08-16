@@ -1,4 +1,4 @@
-// Copyright (c) 2022 LG Electronics, Inc.
+// Copyright (c) 2022-2024 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ void CecLunaService::handleListAdapters(pbnjson::JValue &requestObj) {
             > (CommandType::LIST_ADAPTERS, std::bind(&CecLunaService::callback, this, m_clientId,
                     CommandType::LIST_ADAPTERS, std::placeholders::_1));
     //Send command to CEC Controller
-    CecController::getInstance()->HandleCommand(command);
+    CecController::getInstance()->HandleCommand(std::move(command));
 }
 
 bool CecLunaService::scan(LSMessage &message) {
@@ -125,7 +125,7 @@ void CecLunaService::handleScan(pbnjson::JValue &requestObj) {
     }
     command->setData(data);
     //Send command to CEC Controller
-    CecController::getInstance()->HandleCommand(command);
+    CecController::getInstance()->HandleCommand(std::move(command));
 }
 
 bool CecLunaService::sendCommand(LSMessage &message) {
@@ -199,11 +199,11 @@ void CecLunaService::handleSendCommand(pbnjson::JValue &requestObj) {
             ceccommand.args.push_back(commandArg);
         }
     }
-    data->command = ceccommand;
+    data->command = std::move(ceccommand);
 
     command->setData(data);
     //Send command to CEC Controller
-    CecController::getInstance()->HandleCommand(command);
+    CecController::getInstance()->HandleCommand(std::move(command));
 }
 
 bool CecLunaService::getConfig(LSMessage &message) {
@@ -244,7 +244,7 @@ void CecLunaService::handleGetConfig(pbnjson::JValue &requestObj) {
     }
     command->setData(data);
     //Send command to CEC Controller
-    CecController::getInstance()->HandleCommand(command);
+    CecController::getInstance()->HandleCommand(std::move(command));
 }
 
 bool CecLunaService::setConfig(LSMessage &message) {
@@ -288,7 +288,7 @@ void CecLunaService::handleSetConfig(pbnjson::JValue &requestObj) {
     }
     command->setData(data);
     //Send command to CEC Controller
-    CecController::getInstance()->HandleCommand(command);
+    CecController::getInstance()->HandleCommand(std::move(command));
 }
 
 void CecLunaService::callback(void *ctx, uint16_t clientId, enum CommandType type,
@@ -307,7 +307,7 @@ void CecLunaService::callback(void *ctx, uint16_t clientId, enum CommandType typ
             //get response object based on command type
             pbnjson::JValue responseObj = pbnjson::Object();
             responseObj.put("returnValue", true);
-            pThis->parseResponseObject(responseObj, type, respData);
+            pThis->parseResponseObject(responseObj, type, std::move(respData));
             LSUtils::postToClient(request, responseObj);
         } else {
             if (respData->error) {
