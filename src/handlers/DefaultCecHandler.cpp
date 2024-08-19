@@ -45,7 +45,7 @@ DefaultCecHandler::DefaultCecHandler() :
 
   std::shared_ptr<MessageData> msgDataAdapter = std::make_shared<MessageData>();
   msgDataAdapter->type = LIST_ADAPTERS;
-  mQueue.addMessage(msgDataAdapter);
+  mQueue.addMessage(std::move(msgDataAdapter));
 }
 
 DefaultCecHandler::~DefaultCecHandler() {
@@ -67,7 +67,7 @@ void DefaultCecHandler::HandleMessageCb(CommandType type, std::vector<std::strin
       return HandleGetConfigCb(resp);
 
     case SET_CONFIG:
-      return HandleSetConfigCb(resp);
+      return HandleSetConfigCb(std::move(resp));
 
     default:
       AppLogError()<<" DefaultCecHandler::"<<__func__<<":"<<__LINE__<<" Invalid command type";
@@ -393,14 +393,14 @@ void DefaultCecHandler::HandleScanCb(std::vector<std::string> resp) {
       }
     }
 
-    CecDevice dev {name,
+    CecDevice dev {std::move(name),
                   address,
-                  activeSource,
-                  vendor,
-                  osd,
-                  cecVersion,
-                  powerStatus,
-                  language};
+                  std::move(activeSource),
+                  std::move(vendor),
+                  std::move(osd),
+                  std::move(cecVersion),
+                  std::move(powerStatus),
+                  std::move(language)};
 
     respCmd->devices.push_back(dev);
 
@@ -589,7 +589,7 @@ void DefaultCecHandler::HandleSetConfigCb(std::vector<std::string> resp) {
 
   //TODO: Check error and set error values.
 
-  callback(respCmd);
+  callback(std::move(respCmd));
 }
 
 bool DefaultCecHandler::HandleCommand(std::shared_ptr<Command> command) {
@@ -724,7 +724,7 @@ bool DefaultCecHandler::HandleSendCommand(std::shared_ptr<Command> command) {
       msgData->params[(*it).arg];
     }
   }
-  mQueue.addMessage(msgData);
+  mQueue.addMessage(std::move(msgData));
 
   return true;
 }
@@ -738,7 +738,7 @@ bool DefaultCecHandler::HandleScan(std::shared_ptr<Command> command) {
   if (!scanData->adapter.empty())
     msgData->params["adapter"] = scanData->adapter;
 
-  mQueue.addMessage(msgData);
+  mQueue.addMessage(std::move(msgData));
 
   return true;
 }
@@ -750,7 +750,7 @@ bool DefaultCecHandler::HandleListAdapters(std::shared_ptr<Command> command) {
 
   msgData->type = LIST_ADAPTERS;
 
-  mQueue.addMessage(msgData);
+  mQueue.addMessage(std::move(msgData));
 
   return true;
 }
@@ -766,7 +766,7 @@ bool DefaultCecHandler::HandleGetConfig(std::shared_ptr<Command> command) {
   if (!configData->adapter.empty())
     msgData->params["adapter"] = configData->adapter;
 
-  mQueue.addMessage(msgData);
+  mQueue.addMessage(std::move(msgData));
 
   return true;
 }
@@ -782,7 +782,7 @@ bool DefaultCecHandler::HandleSetConfig(std::shared_ptr<Command> command) {
   if (!configData->adapter.empty())
     msgData->params["adapter"] = configData->adapter;
 
-  mQueue.addMessage(msgData);
+  mQueue.addMessage(std::move(msgData));
 
   return true;
 }

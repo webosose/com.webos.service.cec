@@ -71,7 +71,7 @@ void MessageQueue::nyxCallback(nyx_cec_response_t *response)
         AppLogDebug() <<response->responses[i]<<"\n";
         resp.push_back(response->responses[i]);
     }
-    objPtr->mCb(mType,resp);
+    objPtr->mCb(mType,std::move(resp));
 }
 
 void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
@@ -90,7 +90,7 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
         strcpy(command.name,request->params["cmd-name"].c_str());
     AppLogDebug() <<"COMMAND NAME : [ "<<command.name<<" ]"<<"\n";
     size_t i = 0;
-    for(auto it : request->params) {
+    for(const auto &it : request->params) {
         strcpy(command.params[i].name,it.first.c_str());
         strcpy(command.params[i].value,it.second.c_str());
         AppLogDebug() <<"Name : [ "<<command.params[i].name<<" ]" <<" Value : ["<<command.params[i].value<<" ]"<<"\n";
@@ -103,7 +103,7 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
         std::vector<std::string> resp;
         std::string reply = "response: success";
         resp.push_back(reply);
-        mCb(mType,resp);
+        mCb(mType,std::move(resp));
     }
     else if(error != NYX_ERROR_NONE)
     {
@@ -111,7 +111,7 @@ void MessageQueue::sendCommand(std::shared_ptr<MessageData> request)
         std::vector<std::string> resp;
         std::string reply = "response: failed";
         resp.push_back(reply);
-        mCb(mType,resp);
+        mCb(mType,std::move(resp));
     }
 }
 
@@ -124,7 +124,7 @@ void MessageQueue::getConfig(std::shared_ptr<MessageData> request)
     char *configName = nullptr;
     char *value = new char[100];
 
-    for(auto it : request->params) {
+    for(const auto &it : request->params) {
         AppLogDebug() <<__func__<<" Updating param"<<"\n";
         if(it.first != "adapter") {
             if(configName != nullptr){
@@ -142,13 +142,13 @@ void MessageQueue::getConfig(std::shared_ptr<MessageData> request)
         std::vector<std::string> resp;
         std::string reply = "response: failed";
         resp.push_back(reply);
-        mCb(mType,resp);
+        mCb(mType,std::move(resp));
     }
     else {
         AppLogDebug() <<__func__<<": Value :"<<value<<"\n";
         std::vector<std::string> resp;
         resp.push_back(value);
-        mCb(mType,resp);
+        mCb(mType,std::move(resp));
     }
     if (configName != nullptr)
       delete[] configName;
@@ -163,7 +163,7 @@ void MessageQueue::setConfig(std::shared_ptr<MessageData> request)
     nyx_error_t error;
     char *type = nullptr;
     char *value = nullptr;
-    for (auto it : request->params) {
+    for (const auto &it : request->params) {
         if(it.first != "adapter") {
             if(type != nullptr){
                delete[] type;
@@ -184,7 +184,7 @@ void MessageQueue::setConfig(std::shared_ptr<MessageData> request)
         std::vector<std::string> resp;
         std::string reply = "response: success";
         resp.push_back(reply);
-        mCb(mType,resp);
+        mCb(mType,std::move(resp));
     }
     else  if (NYX_ERROR_NONE != error)
     {
@@ -192,7 +192,7 @@ void MessageQueue::setConfig(std::shared_ptr<MessageData> request)
         std::vector<std::string> resp;
         std::string reply = "response: failed";
         resp.push_back(reply);
-        mCb(mType,resp);
+        mCb(mType,std::move(resp));
     }
 
     if (type != nullptr)
@@ -269,7 +269,7 @@ void MessageQueue::dispatchMessage()
             std::shared_ptr<MessageData> front = std::move(mQueue.front());
             mQueue.erase(mQueue.begin());
             lock.unlock();
-            handleMessage(front);
+            handleMessage(std::move(front));
         }
         else
             lock.unlock();

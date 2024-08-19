@@ -1,4 +1,4 @@
-// Copyright (c) 2022 LG Electronics, Inc.
+// Copyright (c) 2022-2024 LG Electronics, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,5 +93,5 @@ bool CecController::Register(CreateCecHandlerObject createObject, HandlerRank ra
 
 std::shared_ptr<CecDevice> CecController::GetDeviceInfo(std::string destAddress) {
   CecHandler *default_handler = mHandlerList.back();
-  return default_handler->GetDeviceInfo(destAddress);
+  return default_handler->GetDeviceInfo(std::move(destAddress));
 }
