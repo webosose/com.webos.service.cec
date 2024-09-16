@@ -246,20 +246,19 @@ bool MessageQueue::handleMessage(std::shared_ptr<MessageData> request)
 void MessageQueue::addMessage(std::shared_ptr<MessageData> request)
 {
     AppLogInfo() <<__func__ << " called \n";
-    std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-    lock.lock();
-    mQueue.push_back(request);
-    lock.unlock();
-  
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mQueue.push_back(request);
+    }
+
     mCondVar.notify_one();
 }
 
 void MessageQueue::dispatchMessage()
 {
     AppLogDebug() <<__func__ << " called \n";
-
+    std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
     do {
-        std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
         lock.lock();
         mCondVar.wait(lock, [this] {
             return (mQueue.size() || mQuit);
@@ -271,8 +270,10 @@ void MessageQueue::dispatchMessage()
             lock.unlock();
             handleMessage(std::move(front));
         }
-        else
-            lock.unlock();
+        else if(!mQueue.size() && !mQuit){
+                //this condition never occurs , added for coverity medium issue fix
+                lock.unlock();
+        }
     } while (!mQuit);
 }
 
