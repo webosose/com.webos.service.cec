@@ -38,10 +38,10 @@ DefaultCecHandler::DefaultCecHandler() :
   std::shared_ptr<Command> listAdapterCommand = std::make_shared<Command>(CommandType::LIST_ADAPTERS,
                                                                           [](std::shared_ptr<CommandResData> resp) -> void {});
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  mCmdList.push_back(listAdapterCommand);
-  lock.unlock();
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    mCmdList.push_back(listAdapterCommand);
+  }
 
   std::shared_ptr<MessageData> msgDataAdapter = std::make_shared<MessageData>();
   msgDataAdapter->type = LIST_ADAPTERS;
@@ -110,8 +110,9 @@ void DefaultCecHandler::HandleSystemInfoResp(std::shared_ptr<SendCommandReqData>
 
       if (payload.key=="name") {
         if ((*itr).find("OSD name of device") != std::string::npos) {
-          std::size_t startPos = ((*itr).find_first_of('\'') == std::string::npos)?0:((*itr).find_first_of('\'') + 1);
-          std::size_t endPos = ((*itr).substr(startPos).find_last_of('\'') == std::string::npos)?(*itr).size()-1:(*itr).find_last_of('\'');
+          auto pos = (*itr).find_first_of('\'');
+          auto startPos = (pos == std::string::npos)?0:(pos + 1);
+          auto endPos = ((*itr).substr(startPos).find_last_of('\'') == std::string::npos)?(*itr).size()-1:(*itr).find_last_of('\'');
           AppLogDebug()<<" DefaultCecHandler::"<<__func__<<":"<<__LINE__<<" startPos = "<<startPos<<" endPos = "<<endPos<<" size = "<<(*itr).size();
           payload.value = (*itr).substr(startPos, endPos-startPos);
           break;
@@ -121,8 +122,9 @@ void DefaultCecHandler::HandleSystemInfoResp(std::shared_ptr<SendCommandReqData>
 
       if (payload.key=="language") {
   	    if ((*itr).find("language") != std::string::npos) {
-          std::size_t startPos = ((*itr).find_first_of('\'') == std::string::npos)?0:((*itr).find_first_of('\'') + 1);
-          std::size_t endPos = ((*itr).substr(startPos).find_last_of('\'') == std::string::npos)?(*itr).size()-1:(*itr).find_last_of('\'');
+          auto pos = (*itr).find_first_of('\'');
+          auto startPos = (pos == std::string::npos)?0:(pos + 1);
+          auto endPos = ((*itr).substr(startPos).find_last_of('\'') == std::string::npos)?(*itr).size()-1:(*itr).find_last_of('\'');
           AppLogDebug()<<" DefaultCecHandler::"<<__func__<<":"<<__LINE__<<" startPos = "<<startPos<<" endPos = "<<endPos<<" size = "<<(*itr).size();
           payload.value = (*itr).substr(startPos, endPos-startPos);
           break;
@@ -152,13 +154,14 @@ void DefaultCecHandler::HandleSendCommandCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"SEND_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  std::shared_ptr<Command> command = mCmdList.front();
-  if (command->getType() != SEND_COMMAND)
-    return;
-  mCmdList.pop_front();
-  lock.unlock();
+  std::shared_ptr<Command> command;
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    command = mCmdList.front();
+    if (command->getType() != SEND_COMMAND)
+      return;
+    mCmdList.pop_front();
+  }
 
   std::shared_ptr<SendCommandResData> respCmd = std::make_shared<SendCommandResData>();
   CommandCallback callback = command->getCallback();
@@ -323,13 +326,14 @@ void DefaultCecHandler::HandleScanCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"SCAN_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  std::shared_ptr<Command> command = mCmdList.front();
-  if (command->getType() != SCAN)
-    return;
-  mCmdList.pop_front();
-  lock.unlock();
+  std::shared_ptr<Command> command;
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    command = mCmdList.front();
+    if (command->getType() != SCAN)
+      return;
+    mCmdList.pop_front();
+  }
 
   std::shared_ptr<ScanResData> respCmd = std::make_shared<ScanResData>();
   CommandCallback callback = command->getCallback();
@@ -404,16 +408,18 @@ void DefaultCecHandler::HandleScanCb(std::vector<std::string> resp) {
 
     respCmd->devices.push_back(dev);
 
-    std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-    lock.lock();
-    for (auto itr=mDeviceInfoList.begin(); itr!=mDeviceInfoList.end(); ++itr) {
-      if ((*itr).getAddress() == address) {
-        mDeviceInfoList.erase(itr);
-        break;
+    {
+      std::unique_lock<std::mutex> lock(mMutex);
+      for (auto itr = mDeviceInfoList.begin(); itr != mDeviceInfoList.end(); ++itr)
+      {
+        if ((*itr).getAddress() == address)
+        {
+          mDeviceInfoList.erase(itr);
+          break;
+        }
       }
+      mDeviceInfoList.push_back(dev);
     }
-    mDeviceInfoList.push_back(dev);
-    lock.unlock();
   }
 
   callback(std::static_pointer_cast<CommandResData>(respCmd));
@@ -425,13 +431,14 @@ void DefaultCecHandler::HandleListAdaptersCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"LISTADAPTERS_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  std::shared_ptr<Command> command = mCmdList.front();
-  if (command->getType() != LIST_ADAPTERS)
-    return;
-  mCmdList.pop_front();
-  lock.unlock();
+  std::shared_ptr<Command> command;
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    command = mCmdList.front();
+    if (command->getType() != LIST_ADAPTERS)
+      return;
+    mCmdList.pop_front();
+  }
 
   std::shared_ptr<ListAdaptersResData> respCmd = std::make_shared<ListAdaptersResData>();
   CommandCallback callback = command->getCallback();
@@ -443,9 +450,10 @@ void DefaultCecHandler::HandleListAdaptersCb(std::vector<std::string> resp) {
     return;
   }
 
-  lock.lock();
-  mAdaptersList.clear();
-  lock.unlock();
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    mAdaptersList.clear();
+  }
 
   for (auto it=resp.begin(); it!=resp.end(); ) {
     if ((*it).find("com port") == std::string::npos) {
@@ -454,14 +462,16 @@ void DefaultCecHandler::HandleListAdaptersCb(std::vector<std::string> resp) {
     }
     if (GetValue(*it) == "RPI") {
       respCmd->cecAdapters.push_back("cec0");
-      lock.lock();
-      mAdaptersList.push_back("cec0");
-      lock.unlock();
+      {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mAdaptersList.push_back("cec0");
+      }
     } else {
       respCmd->cecAdapters.push_back(GetValue(*it));
-      lock.lock();
-      mAdaptersList.push_back(GetValue(*it));
-      lock.unlock();
+      {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mAdaptersList.push_back(GetValue(*it));
+      }
     }
     ++it;
   }
@@ -474,13 +484,14 @@ void DefaultCecHandler::HandleGetConfigCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"GETCONFIG_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  std::shared_ptr<Command> command = mCmdList.front();
-  if (command->getType() != GET_CONFIG)
-    return;
-  mCmdList.pop_front();
-  lock.unlock();
+  std::shared_ptr<Command> command;
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    command = mCmdList.front();
+    if (command->getType() != GET_CONFIG)
+      return;
+    mCmdList.pop_front();
+  }
 
   std::shared_ptr<GetConfigResData> respCmd = std::make_shared<GetConfigResData>();
   CommandCallback callback = command->getCallback();
@@ -569,13 +580,14 @@ void DefaultCecHandler::HandleSetConfigCb(std::vector<std::string> resp) {
   printResp(resp);
   AppLogDebug()<<"SETCONFIG_COMMAND Response : END";
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  std::shared_ptr<Command> command = mCmdList.front();
-  if (command->getType() != SET_CONFIG)
-    return;
-  mCmdList.pop_front();
-  lock.unlock();
+  std::shared_ptr<Command> command;
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    command = mCmdList.front();
+    if (command->getType() != SET_CONFIG)
+      return;
+    mCmdList.pop_front();
+  }
 
   std::shared_ptr<CommandResData> respCmd = std::make_shared<CommandResData>();
   CommandCallback callback = command->getCallback();
@@ -661,10 +673,10 @@ bool DefaultCecHandler::HandleCommand(std::shared_ptr<Command> command) {
     return true;
   }
 
-  std::unique_lock < std::mutex > lock(mMutex, std::defer_lock);
-  lock.lock();
-  mCmdList.push_back(command);
-  lock.unlock();
+  {
+    std::unique_lock<std::mutex> lock(mMutex);
+    mCmdList.push_back(command);
+  }
 
   switch(command->getType()) {
     case SEND_COMMAND:
